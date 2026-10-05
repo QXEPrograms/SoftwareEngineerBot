@@ -5,7 +5,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, Card, db, fail, get_setting, log, make_public, reply, send_log, set_setting
+from core import ACCENT, BOOST_PINK, Card, db, fail, get_setting, log, make_public, reply, send_log, set_setting
+from cogs.economy import BOOSTER_COINS, BOOSTER_DIVIDEND
 from cogs.tickets import ticket_panel
 
 RULES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules.json")
@@ -98,6 +99,28 @@ def verify_panel(guild_name: str) -> Card:
     )
 
 
+def booster_perks(guild: discord.Guild) -> str:
+    role = guild.premium_subscriber_role
+    return (f"**🎨 Booster role & color**\nStand out with the {role.mention if role else 'Server Booster'} role, "
+            f"shown above everyone else in the member list.\n\n"
+            f"**💰 Bonus coins**\n{BOOSTER_COINS}× daily and chat coins, plus "
+            f"{round((BOOSTER_DIVIDEND - 1) * 100)}% more stock dividends.\n\n"
+            "**🎮 Early access**\nSneak peeks and playtests of studio games before anyone else.\n\n"
+            "**⭐ Priority support**\nYour tickets are flagged and moved to the top of the queue.")
+
+
+def boosters_panel(guild: discord.Guild) -> Card:
+    return Card(
+        "## 💎 Booster Perks\nBoosting helps Hawaii Studio grow. As a thank-you, every booster gets:",
+        None,
+        booster_perks(guild),
+        None,
+        f"-# 🚀 {guild.premium_subscription_count} boosts · Level {guild.premium_tier} · "
+        "Boost from the server name menu → **Server Boost**. Perks apply automatically while you boost.",
+        banner="boosters", color=BOOST_PINK,
+    )
+
+
 def has_custom_id(components, custom_id):
     return any(getattr(c, "custom_id", None) == custom_id or has_custom_id(getattr(c, "children", []), custom_id)
                for c in components)
@@ -180,6 +203,22 @@ class Panels(commands.Cog):
         await verify_panel(interaction.guild.name).send(interaction.channel)
         await reply(interaction, description=f"Verify panel posted. Members will get {role.mention}.",
                     color=ACCENT, ephemeral=True)
+
+    @panel.command(name="boosters", description="Post the booster perks panel")
+    async def panel_boosters(self, interaction: discord.Interaction):
+        guild = interaction.guild
+        await boosters_panel(guild).send(interaction.channel)
+        text = "Booster perks panel posted."
+        role = guild.premium_subscriber_role
+        if role and not role.hoist:
+            try:  # show boosters separately in the member list, pink unless you've picked a color
+                await role.edit(hoist=True, **({"colour": BOOST_PINK} if role.colour.value == 0 else {}),
+                                reason="Booster perks: booster role shown above members")
+                text += f"\n{role.mention} is now shown separately in the member list."
+            except discord.HTTPException:
+                text += (f"\nTo show boosters above everyone, open Server Settings → Roles → {role.mention} "
+                         "and turn on **Display role members separately**.")
+        await reply(interaction, description=text, color=ACCENT, ephemeral=True)
 
     @panel.command(name="rules", description="Post the rules panel with a category dropdown")
     async def panel_rules(self, interaction: discord.Interaction):

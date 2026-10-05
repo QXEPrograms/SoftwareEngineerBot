@@ -1,52 +1,70 @@
 {
-  "intro": "Find all of our rules using the dropdown below. Please review them before taking part. Breaking these rules will result in moderation!",
-  "note": "Failure to follow these rules will result in moderation. — Hawaii Studio",
+  "intro": "Welcome to Hawaii Studio! Please read our rules before chatting, ordering, or working with us. Use the dropdown below to view every category.",
+  "note": "Breaking these rules will result in moderation. Staff may act on anything that harms the community, even if it isn't listed. — Hawaii Studio",
   "sections": [
     {
       "name": "Discord Rules",
       "emoji": "📜",
       "description": "How everyone is expected to act",
       "rules": [
-        "Respect everyone. No harassment, hate speech, or discrimination.",
-        "No spamming, excessive caps, or mass pinging.",
-        "No advertising, including in DMs.",
-        "Keep content SFW. No NSFW, gore, or disturbing content.",
-        "Follow the [Discord Terms of Service](https://discord.com/terms).",
+        "Be respectful. No harassment, hate speech, discrimination, or starting drama.",
+        "No spamming, excessive caps, mass pinging, or flooding channels.",
+        "No advertising or self-promotion, including in DMs, unless staff approve it.",
+        "Keep everything SFW. No NSFW, gore, or disturbing content, including in profiles and statuses.",
+        "Don't impersonate staff, developers, or other members.",
+        "Use channels for their purpose and keep conversations on topic.",
+        "Follow the [Discord Terms of Service](https://discord.com/terms) and [Community Guidelines](https://discord.com/guidelines).",
         "Staff decisions are final. Appeal through a ticket, not in public chat."
       ]
     },
     {
       "name": "Voice Chat Rules",
       "emoji": "🎙️",
-      "description": "Keeping voice channels enjoyable",
+      "description": "Keeping calls enjoyable for everyone",
       "rules": [
-        "No loud noises, soundboards, or voice changers that disrupt others.",
+        "No loud noises, earrape, soundboards, or voice changers.",
         "Don't talk over people or interrupt on purpose.",
-        "Don't record anyone without their permission.",
-        "Keep music in the music channels."
+        "Never record or stream anyone without their permission.",
+        "Only play music in music channels.",
+        "Staff may move or disconnect you to keep calls running smoothly."
       ]
     },
     {
-      "name": "Studio Rules",
+      "name": "Studio & Asset Rules",
       "emoji": "🔧",
-      "description": "Protecting our work and creators",
+      "description": "Protecting our work and our creators",
       "rules": [
-        "Never share or leak studio work, assets, or code without permission.",
-        "Give credit when you use someone else's work.",
-        "No stealing, reuploading, or reselling assets.",
-        "Keep feedback constructive and respectful.",
+        "Never leak, share, or screenshot unreleased studio work without permission.",
+        "No stealing, reuploading, or reselling studio models, scripts, UI, or other assets.",
+        "Never share backdoored or malicious models, plugins, or scripts. This is an instant ban.",
+        "Give credit when you use or build on someone else's work.",
+        "Keep feedback constructive. Critique the work, not the person.",
         "Keep project discussion in the right channels."
       ]
     },
     {
-      "name": "Support & Tickets",
-      "emoji": "🎫",
-      "description": "How to get help from staff",
+      "name": "Commission & Payment Rules",
+      "emoji": "🛒",
+      "description": "Ordering from or working with the studio",
       "rules": [
-        "Open a ticket for help instead of DMing staff.",
-        "One ticket per issue, and please be patient.",
-        "Explain your issue clearly and include screenshots if you can.",
-        "Don't open tickets as a joke. Misuse will result in moderation."
+        "All commissions go through a ticket. Don't DM developers to place orders.",
+        "Agree on the price, what's included, and the deadline in your ticket before work starts.",
+        "Only pay using the methods staff give you in your ticket.",
+        "Chargebacks or scamming result in a permanent ban.",
+        "Finished work isn't handed over until it's fully paid for.",
+        "Revisions are limited to what was agreed in your ticket."
+      ]
+    },
+    {
+      "name": "Roblox Rules",
+      "emoji": "🎮",
+      "description": "Staying within Roblox's rules",
+      "rules": [
+        "Follow the [Roblox Terms of Use](https://www.roblox.com/info/terms) and Community Standards.",
+        "No exploiting, cheating, or sharing exploit scripts.",
+        "No buying, selling, or trading Roblox accounts, items, or Robux outside official Roblox systems.",
+        "Never ask for or share passwords, cookies, or 2-step verification codes.",
+        "Don't use alt accounts to get around bans, here or in our games."
       ]
     }
   ]

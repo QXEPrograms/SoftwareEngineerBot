@@ -25,6 +25,7 @@ BANNERS = {
     "settings": ("SETTINGS", "Your server, {your way}."),
     "commands": ("COMMANDS", "Everything I can {do for you}."),
     "verify": ("VERIFICATION", "Unlock {the full studio}."),
+    "boosters": ("BOOSTER PERKS", "Thank you for {supporting us}."),
 }
 
 

@@ -6,11 +6,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from core import ACCENT, Card, add_coins, db, fail, get_coins, log, reply, send_log
+from core import ACCENT, Card, add_coins, db, fail, get_coins, is_booster, log, reply, send_log
 
 DAILY_COINS = 100
 CHAT_COINS = 5        # coins per message...
 CHAT_COOLDOWN = 60    # ...at most once per this many seconds
+BOOSTER_COINS = 2     # Server Boosters earn 2x daily and chat coins
+BOOSTER_DIVIDEND = 1.5  # ...and 50% more stock dividends
 NO_STOCK = "This server hasn't set up stocks yet. An admin can use `/stock setup`."
 
 
@@ -69,7 +71,7 @@ class Economy(commands.Cog):
             return
         self.last_chat_reward[message.author.id] = now
         with db:
-            add_coins(message.author.id, CHAT_COINS)
+            add_coins(message.author.id, CHAT_COINS * (BOOSTER_COINS if is_booster(message.author) else 1))
 
     @app_commands.command(description="Check your (or someone's) coin balance")
     async def balance(self, interaction: discord.Interaction, member: discord.Member | None = None):
@@ -87,11 +89,14 @@ class Economy(commands.Cog):
             next_claim = datetime.fromisoformat(row[0]) + timedelta(hours=24)
             if now < next_claim:
                 return await fail(interaction, f"You already claimed today. Come back {discord.utils.format_dt(next_claim, 'R')}.")
+        booster = is_booster(interaction.user)
+        amount = DAILY_COINS * (BOOSTER_COINS if booster else 1)
         with db:
-            add_coins(uid, DAILY_COINS)
+            add_coins(uid, amount)
             db.execute("UPDATE wallets SET last_daily=? WHERE user_id=?", (now.isoformat(), uid))
         await reply(interaction, "🎁 Daily Reward",
-                    f"You claimed **{DAILY_COINS}** coins!\n**Balance:** {get_coins(uid):,} coins\n"
+                    f"You claimed **{amount}** coins!{' 💎 *2× booster bonus*' if booster else ''}\n"
+                    f"**Balance:** {get_coins(uid):,} coins\n"
                     f"-# Come back {discord.utils.format_dt(now + timedelta(hours=24), 'R')} for more.", color=ACCENT)
 
     @app_commands.command(description="Send coins to another member")
@@ -233,14 +238,17 @@ class Economy(commands.Cog):
             if last and now - datetime.fromisoformat(last) < timedelta(hours=24):
                 continue
             holders = db.execute("SELECT user_id, shares FROM holdings WHERE guild_id=?", (gid,)).fetchall()
+            guild = self.bot.get_guild(gid)
+            paid = 0
             with db:
                 if last:  # first run just starts the 24h clock
                     for uid, shares in holders:
-                        add_coins(uid, shares * dividend)
+                        bonus = BOOSTER_DIVIDEND if guild and is_booster(guild.get_member(uid)) else 1
+                        amount = int(shares * dividend * bonus)
+                        add_coins(uid, amount)
+                        paid += amount
                 db.execute("UPDATE stocks SET last_dividend=? WHERE guild_id=?", (now.isoformat(), gid))
-            guild = self.bot.get_guild(gid)
             if last and holders and guild:
-                paid = sum(s for _, s in holders) * dividend
                 log.info("Paid %d coins in dividends in %s", paid, guild)
                 await send_log(guild, Card(f"### 📈 Dividends Paid\n"
                                            f"Paid **{paid:,}** coins to **{len(holders)}** shareholders.",

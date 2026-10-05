@@ -8,8 +8,8 @@ Runs 24/7 on Railway. Every push to the `main` branch on GitHub redeploys it aut
 | `bot.py` | Starts the bot and loads everything |
 | `core.py` | Brand colors, database, shared helpers, the branded `Card` layout |
 | `cogs/general.py` | `/help`, fun commands, `/config`, welcome messages, auto role |
-| `cogs/panels.py` | `/panel rules`, `/panel verify` and `/panel tickets` |
-| `cogs/tickets.py` | Ticket buttons, transcripts |
+| `cogs/panels.py` | `/panel rules`, `/panel tickets`, `/panel boosters` and `/panel verify` |
+| `cogs/tickets.py` | Ticket types and their questions (`TICKET_TYPES`), transcripts |
 | `cogs/moderation.py` | Kick, ban, timeout, purge + mod log |
 | `cogs/economy.py` | Coins, `/pay`, `/leaderboard`, server stocks, dividends |
 | `cogs/announcements.py` | `/announce`, `/announceall`, `/schedule` |
@@ -23,6 +23,7 @@ Runs 24/7 on Railway. Every push to the `main` branch on GitHub redeploys it aut
 3. Optional: `/panel verify role:@Member` in your verify channel if you want this bot's own Verify button to hand out a role.
 4. `/panel rules` in your rules channel
 5. `/panel tickets category:Tickets support_role:@Staff` in your support channel
+6. `/panel boosters` in your boosts/perks channel
 6. `/stock setup total_shares:1000 price:50 dividend:1`
 
 If you use the verify button, don't also give `@Member` with `/config autorole`, or new members skip verification.

@@ -4,7 +4,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, BRAND_NAME, Card, fail, get_setting, log, make_public, reply, set_setting
+from cogs.economy import BOOSTER_COINS, BOOSTER_DIVIDEND
+from core import (ACCENT, BOOST_PINK, BRAND_NAME, Card, fail, get_setting, is_booster, log, make_public, reply,
+                  set_setting)
 
 EIGHTBALL = ["Yes.", "No.", "Maybe.", "Definitely!", "Ask again later.", "Very doubtful.", "Without a doubt.",
              "Signs point to yes.", "Don't count on it."]
@@ -29,8 +31,9 @@ class General(commands.Cog):
             "**💰 Economy**\n`/daily` `/balance` `/pay` `/leaderboard`\n-# You also earn coins just by chatting!",
             "**📈 Server Stocks**\n`/stock info` `/stock buy` `/stock sell` `/stock portfolio`",
             "**🛡️ Moderation**\n`/kick` `/ban` `/timeout` `/purge`",
+            "**💎 Boosters**\n2× coins, bonus dividends and priority tickets while you boost!",
             None,
-            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel verify` `/stock setup`\n"
+            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel boosters` `/panel verify` `/stock setup`\n"
             "`/config view` `/config welcome` `/config logs` `/config autorole`",
             banner="commands",
         ).respond(interaction, ephemeral=True)
@@ -145,6 +148,26 @@ class General(commands.Cog):
                 *next_steps,
                 banner="welcome", pings=discord.AllowedMentions(users=True),
             ).send(channel)
+
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if is_booster(before) or not is_booster(after):
+            return  # only when someone starts boosting
+        guild = after.guild
+        channel = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
+        if not channel:
+            return
+        await Card(
+            discord.ui.Section(f"## 💎 Thank you for boosting!\n"
+                               f"{after.mention} just boosted **{guild.name}**! 🎉\n"
+                               f"We're now at **{guild.premium_subscription_count}** boosts.",
+                               accessory=discord.ui.Thumbnail(after.display_avatar.url)),
+            None,
+            f"**Your perks are now active:** 💰 {BOOSTER_COINS}× coins · "
+            f"📈 +{round((BOOSTER_DIVIDEND - 1) * 100)}% dividends · ⭐ priority tickets · 🎮 early access",
+            banner="boosters", color=BOOST_PINK, pings=discord.AllowedMentions(users=True),
+        ).send(channel)
 
 
 async def setup(bot: commands.Bot):

@@ -20,6 +20,11 @@ BRAND_NAME = "Hawaii Studio"
 BRAND = discord.Color(0x007FFD)   # main logo blue
 ACCENT = discord.Color(0x00E9FD)  # logo cyan, used for success
 ERROR = discord.Color(0xFF4D6D)
+BOOST_PINK = discord.Color(0xF47FFF)  # Discord's Nitro boost color
+
+
+def is_booster(member) -> bool:
+    return getattr(member, "premium_since", None) is not None
 
 log = logging.getLogger("bot")
 
