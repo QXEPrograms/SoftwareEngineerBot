@@ -10,8 +10,10 @@ from discord import app_commands
 from dotenv import load_dotenv
 
 load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+TOKEN = (os.getenv("DISCORD_TOKEN") or "").strip()
+if not TOKEN:
+    raise SystemExit("DISCORD_TOKEN is missing. Add it to .env (or to Railway's Variables tab).")
+OWNER_ID = int((os.getenv("OWNER_ID") or "0").strip() or 0)
 
 BRAND_NAME = "Hawaii Studio"
 BRAND = discord.Color(0x007FFD)   # main logo blue
@@ -22,7 +24,8 @@ log = logging.getLogger("bot")
 footer_icon = None  # set to the bot's avatar once logged in
 
 # ---------- Database ----------
-DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.db"))
+DB_PATH = (os.getenv("DB_PATH") or "").strip() or os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.db")
+os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
 db = sqlite3.connect(DB_PATH)
 db.executescript("""
 CREATE TABLE IF NOT EXISTS settings (guild_id INTEGER PRIMARY KEY);
