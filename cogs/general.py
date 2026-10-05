@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from cogs.economy import BOOSTER_COINS, BOOSTER_DIVIDEND
+from cogs.economy import BOOSTER_COINS
 from core import (ACCENT, BOOST_PINK, BRAND_NAME, Card, fail, get_setting, is_booster, log, make_public, reply,
                   set_setting, staff_only)
 
@@ -28,11 +28,12 @@ class General(commands.Cog):
             "**🔧 General**\n`/ping` `/hello` `/help`",
             "**🎲 Fun**\n`/8ball` `/roll` `/coinflip`",
             "**💰 Economy**\n`/daily` `/balance` `/pay` `/leaderboard`\n-# You also earn coins just by chatting!",
-            "**📈 Server Stocks**\n`/stock info` `/stock buy` `/stock sell` `/stock portfolio`",
+            "**📈 Stock Market**\nBuy server pieces from the stock market panel · `/stock portfolio`",
             "**🛡️ Moderation**\n`/kick` `/ban` `/timeout` `/purge`",
-            "**💎 Boosters**\n2× coins, bonus dividends and priority tickets while you boost!",
+            "**💎 Boosters**\n2× coins and priority tickets while you boost!",
             None,
-            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel boosters` `/panel verify` `/stock setup`\n"
+            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel stocks` `/panel boosters` `/panel verify`\n"
+            "`/stock add` `/stock edit` `/stock remove`\n"
             "`/config view` `/config welcome` `/config logs` `/config autorole`",
             banner="commands",
         ).respond(interaction, ephemeral=True)
@@ -168,7 +169,7 @@ class General(commands.Cog):
                                accessory=discord.ui.Thumbnail(after.display_avatar.url)),
             None,
             f"**Your perks are now active:** 💰 {BOOSTER_COINS}× coins · "
-            f"📈 +{round((BOOSTER_DIVIDEND - 1) * 100)}% dividends · ⭐ priority tickets · 🎮 early access",
+            "⭐ priority tickets · 🎮 early access",
             banner="boosters", color=BOOST_PINK, pings=discord.AllowedMentions(users=True),
         ).send(channel)
 

@@ -7,7 +7,8 @@ from discord.ext import commands
 
 from core import (ACCENT, BOOST_PINK, Card, db, fail, get_setting, log, make_public, reply, send_log, set_setting,
                   staff_only)
-from cogs.economy import BOOSTER_COINS, BOOSTER_DIVIDEND
+from cogs.economy import BOOSTER_COINS
+from cogs.stocks import market_panel
 from cogs.tickets import ticket_panel
 
 RULES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules.json")
@@ -104,8 +105,7 @@ def booster_perks(guild: discord.Guild) -> str:
     role = guild.premium_subscriber_role
     return (f"**🎨 Booster role & color**\nStand out with the {role.mention if role else 'Server Booster'} role, "
             f"shown above everyone else in the member list.\n\n"
-            f"**💰 Bonus coins**\n{BOOSTER_COINS}× daily and chat coins, plus "
-            f"{round((BOOSTER_DIVIDEND - 1) * 100)}% more stock dividends.\n\n"
+            f"**💰 Bonus coins**\n{BOOSTER_COINS}× coins from `/daily` and from chatting.\n\n"
             "**🎮 Early access**\nSneak peeks and playtests of studio games before anyone else.\n\n"
             "**⭐ Priority support**\nYour tickets are flagged and moved to the top of the queue.")
 
@@ -221,6 +221,16 @@ class Panels(commands.Cog):
                 text += (f"\nTo show boosters above everyone, open Server Settings → Roles → {role.mention} "
                          "and turn on **Display role members separately**.")
         await reply(interaction, description=text, color=ACCENT, ephemeral=True)
+
+    @panel.command(name="stocks", description="Post the server stock market")
+    @staff_only(manage_guild=True)
+    async def panel_stocks(self, interaction: discord.Interaction):
+        message = await market_panel(interaction.guild).send(interaction.channel)
+        # Remember it so /stock add, edit, remove and completed sales update it automatically
+        set_setting(interaction.guild_id, "stock_panel_channel", interaction.channel_id)
+        set_setting(interaction.guild_id, "stock_panel_message", message.id)
+        await reply(interaction, description="Stock market posted. It updates by itself whenever listings change. "
+                                             "Add servers with `/stock add`.", color=ACCENT, ephemeral=True)
 
     @panel.command(name="rules", description="Post the rules panel with a category dropdown")
     @staff_only(manage_guild=True)

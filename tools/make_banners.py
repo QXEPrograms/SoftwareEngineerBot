@@ -19,7 +19,7 @@ BANNERS = {
     "support": ("SUPPORT", "Our team is {here to help}."),
     "welcome": ("WELCOME", "Aloha! Glad you {made it}."),
     "announcement": ("ANNOUNCEMENT", "The latest from {Hawaii Studio}."),
-    "stocks": ("SERVER STOCKS", "Own a piece of {the studio}."),
+    "stocks": ("STOCK MARKET", "Own a piece of {our servers}."),
     "moderation": ("MODERATION", "Keeping the community {safe}."),
     "leaderboard": ("LEADERBOARD", "The richest members of {the studio}."),
     "settings": ("SETTINGS", "Your server, {your way}."),

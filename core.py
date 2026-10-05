@@ -15,8 +15,8 @@ TOKEN = (os.getenv("DISCORD_TOKEN") or "").strip()
 if not TOKEN:
     raise SystemExit("DISCORD_TOKEN is missing. Add it to .env (or to Railway's Variables tab).")
 OWNER_ID = int((os.getenv("OWNER_ID") or "0").strip() or 0)
-# Roles that can use every command, including owner-only ones. Comma-separated role IDs.
-MANAGER_ROLES = {int(r) for r in (os.getenv("MANAGER_ROLES") or "1245782007078981703").split(",") if r.strip()}
+# Roles or users that can use every command, including owner-only ones. Comma-separated IDs.
+MANAGERS = {int(i) for i in (os.getenv("MANAGERS") or "1473005622231564318").split(",") if i.strip()}
 
 BRAND_NAME = "Hawaii Studio"
 BRAND = discord.Color(0x007FFD)   # main logo blue
@@ -41,10 +41,16 @@ CREATE TABLE IF NOT EXISTS stocks (guild_id INTEGER PRIMARY KEY, total_shares IN
 CREATE TABLE IF NOT EXISTS holdings (guild_id INTEGER, user_id INTEGER, shares INTEGER, PRIMARY KEY (guild_id, user_id));
 CREATE TABLE IF NOT EXISTS scheduled (id INTEGER PRIMARY KEY AUTOINCREMENT, channel_id INTEGER, title TEXT,
                                       message TEXT, ping INTEGER, send_at TEXT);
+CREATE TABLE IF NOT EXISTS stock_listings (id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id INTEGER, name TEXT,
+                                           description TEXT, price TEXT, total INTEGER, available INTEGER, emoji TEXT);
+CREATE TABLE IF NOT EXISTS stock_owners (listing_id INTEGER, user_id INTEGER, pieces INTEGER,
+                                         PRIMARY KEY (listing_id, user_id));
+CREATE TABLE IF NOT EXISTS stock_sales (channel_id INTEGER PRIMARY KEY, listing_id INTEGER, user_id INTEGER,
+                                        pieces INTEGER, sold_at TEXT);
 """)
 
 SETTINGS = ("welcome_channel", "ticket_category", "support_role", "log_channel", "autorole", "verify_role",
-            "verify_channel")
+            "verify_channel", "stock_panel_channel", "stock_panel_message")
 
 
 def _ensure_columns(table, columns):
@@ -172,12 +178,13 @@ async def make_public(channel: discord.TextChannel, *, read_only: bool) -> bool:
 
 
 def is_manager(user) -> bool:
-    """The bot owner and anyone with a manager role can use every command."""
-    return user.id == OWNER_ID or any(role.id in MANAGER_ROLES for role in getattr(user, "roles", []))
+    """The bot owner and managers (a manager user, or anyone with a manager role) can use every command."""
+    return (user.id == OWNER_ID or user.id in MANAGERS
+            or any(role.id in MANAGERS for role in getattr(user, "roles", [])))
 
 
 def staff_only(**perms):
-    """Allow members with these Discord permissions, or anyone with a manager role."""
+    """Allow members with these Discord permissions, or managers."""
     def predicate(interaction: discord.Interaction):
         if is_manager(interaction.user):
             return True

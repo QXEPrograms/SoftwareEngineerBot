@@ -48,6 +48,11 @@ TICKET_TYPES = {
             {"label": "Why should it be removed?", "long": True},
         ],
     },
+    # Opened from the stock market panel instead of the ticket panel
+    "stock": {
+        "label": "Stock Purchase", "emoji": "📈", "description": "Buying pieces of a server", "hidden": True,
+        "questions": [],
+    },
 }
 
 
@@ -97,7 +102,8 @@ class TicketForm(discord.ui.Modal):
         await open_ticket(interaction, self.key, answers)
 
 
-async def open_ticket(interaction: discord.Interaction, key: str, answers: list[tuple[str, str]]):
+async def open_ticket(interaction: discord.Interaction, key: str, answers: list[tuple[str, str]], staff_items=()):
+    """Open a private ticket channel. `staff_items` are extra buttons shown next to Close Ticket."""
     guild, user = interaction.guild, interaction.user
     if existing := open_ticket_of(guild, user.id):
         return await fail(interaction, f"You already have an open ticket: {existing.mention}")
@@ -118,7 +124,7 @@ async def open_ticket(interaction: discord.Interaction, key: str, answers: list[
         f"{'⭐-' if booster else ''}{key}-{user.name}", topic=f"ticket:{user.id}:{key}", overwrites=overwrites,
         category=guild.get_channel(get_setting(guild.id, "ticket_category") or 0),
         **({"position": 0} if booster else {}))  # boosters' tickets go to the top
-    await ticket_opened(user, support_role, key, answers, booster).send(channel)
+    await ticket_opened(user, support_role, key, answers, booster, staff_items).send(channel)
     await reply(interaction, description=f"Your ticket is ready: {channel.mention}", color=ACCENT, ephemeral=True)
 
 
@@ -179,7 +185,7 @@ class CloseTicketButton(discord.ui.Button):
 
 def ticket_panel() -> Card:
     options = [discord.ui.Section(f"**{t['emoji']} {t['label']}**\n{t['description']}", accessory=OpenTicketButton(key))
-               for key, t in TICKET_TYPES.items()]
+               for key, t in TICKET_TYPES.items() if not t.get("hidden")]
     return Card(
         "### 🎫 Need help? Open a ticket.\nPick the option that fits best. You'll answer a few quick questions, "
         "then a **private channel** opens with our team.",
@@ -192,7 +198,7 @@ def ticket_panel() -> Card:
 
 
 def ticket_opened(user: discord.Member, support_role: discord.Role | None, key: str,
-                  answers: list[tuple[str, str]], booster: bool) -> Card:
+                  answers: list[tuple[str, str]], booster: bool, staff_items=()) -> Card:
     ticket_type = TICKET_TYPES[key]
     who = support_role.mention if support_role else "a staff member"
     parts = [f"### {ticket_type['emoji']} {ticket_type['label']}\n"
@@ -202,7 +208,7 @@ def ticket_opened(user: discord.Member, support_role: discord.Role | None, key: 
     if answers:
         parts += [None, "\n\n".join(f"**{label}**\n{value}" for label, value in answers)]
     parts += [None, "-# When your issue is solved, close the ticket below. A transcript will be saved.",
-              discord.ui.ActionRow(CloseTicketButton())]
+              discord.ui.ActionRow(CloseTicketButton(), *staff_items)]
     return Card(*parts, color=BOOST_PINK if booster else BRAND,
                 pings=discord.AllowedMentions(users=[user], roles=[support_role] if support_role else False))
 
