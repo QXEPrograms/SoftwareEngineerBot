@@ -4,11 +4,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from core import ACCENT, db, fail, log, make_embed, owner_only, parse_duration, reply
+from core import ACCENT, BRAND_NAME, Card, db, fail, log, owner_only, parse_duration, reply
 
 
-def announcement(title: str, message: str) -> discord.Embed:
-    return make_embed(f"📢 {title}", message.replace("\\n", "\n"))
+def announcement(title: str, message: str, ping: bool = False) -> Card:
+    parts = ["@everyone"] if ping else []
+    return Card(*parts, f"## 📢 {title}", None, message.replace("\\n", "\n"),
+                f"-# Posted by {BRAND_NAME} · {discord.utils.format_dt(datetime.now(timezone.utc), 'f')}",
+                banner="announcement")
 
 
 class Announcements(commands.Cog):
@@ -33,7 +36,7 @@ class Announcements(commands.Cog):
         channel = self.find_channel(channel_id)
         if not channel:
             return await fail(interaction, "I couldn't find that channel. Make sure I'm in that server and the ID is correct.")
-        await channel.send(content="@everyone" if ping_everyone else None, embed=announcement(title, message))
+        await announcement(title, message, ping_everyone).send(channel)
         await reply(interaction, description=f"Sent to **#{channel.name}** in **{channel.guild.name}**.",
                     color=ACCENT, ephemeral=True)
 
@@ -42,13 +45,13 @@ class Announcements(commands.Cog):
     @owner_only()
     async def announceall(self, interaction: discord.Interaction, channel_name: str, title: str, message: str):
         await interaction.response.defer(ephemeral=True)
-        embed = announcement(title, message)
+        card = announcement(title, message)
         sent = 0
         for guild in self.bot.guilds:
             channel = discord.utils.get(guild.text_channels, name=channel_name.lstrip("#"))
             if channel:
                 try:
-                    await channel.send(embed=embed)
+                    await card.send(channel)
                     sent += 1
                 except discord.HTTPException:
                     pass
@@ -108,7 +111,7 @@ class Announcements(commands.Cog):
                 log.warning("Scheduled announcement #%d: channel %d not found", sid, channel_id)
                 continue
             try:
-                await channel.send(content="@everyone" if ping else None, embed=announcement(title, message))
+                await announcement(title, message, bool(ping)).send(channel)
             except discord.HTTPException:
                 log.warning("Scheduled announcement #%d couldn't be sent", sid)
 

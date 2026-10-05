@@ -4,7 +4,7 @@ from discord.ext import commands
 
 import core
 
-EXTENSIONS = ["cogs.general", "cogs.tickets", "cogs.moderation", "cogs.economy", "cogs.announcements"]
+EXTENSIONS = ["cogs.general", "cogs.tickets", "cogs.panels", "cogs.moderation", "cogs.economy", "cogs.announcements"]
 
 
 class HawaiiBot(commands.Bot):

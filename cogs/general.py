@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, BRAND_NAME, fail, get_setting, log, make_embed, reply, set_setting
+from core import ACCENT, BRAND_NAME, Card, fail, get_setting, log, make_embed, reply, set_setting
 
 EIGHTBALL = ["Yes.", "No.", "Maybe.", "Definitely!", "Ask again later.", "Very doubtful.", "Without a doubt.",
              "Signs point to yes.", "Don't count on it."]
@@ -20,18 +20,19 @@ class General(commands.Cog):
     # ---------- Info ----------
     @app_commands.command(name="help", description="See everything this bot can do")
     async def help_command(self, interaction: discord.Interaction):
-        embed = make_embed(f"{BRAND_NAME} Bot", "Here's everything I can do:")
-        embed.add_field(name="🔧 General", value="`/ping` `/hello` `/help`", inline=False)
-        embed.add_field(name="🎲 Fun", value="`/8ball` `/roll` `/coinflip`", inline=False)
-        embed.add_field(name="💰 Economy", value="`/daily` `/balance` `/pay` `/leaderboard`\n"
-                                                "You also earn coins just by chatting!", inline=False)
-        embed.add_field(name="📈 Server Stocks", value="`/stock info` `/stock buy` `/stock sell` `/stock portfolio`",
-                        inline=False)
-        embed.add_field(name="🛡️ Moderation", value="`/kick` `/ban` `/timeout` `/purge`", inline=False)
-        embed.add_field(name="⚙️ Setup", value="`/config view` `/config welcome` `/config logs` `/config autorole`\n"
-                                               "`/ticketpanel` `/stock setup`", inline=False)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await Card(
+            discord.ui.Section(f"## {BRAND_NAME} Bot\nHere's everything I can do for your server.",
+                               accessory=discord.ui.Thumbnail(self.bot.user.display_avatar.url)),
+            None,
+            "**🔧 General**\n`/ping` `/hello` `/help`",
+            "**🎲 Fun**\n`/8ball` `/roll` `/coinflip`",
+            "**💰 Economy**\n`/daily` `/balance` `/pay` `/leaderboard`\n-# You also earn coins just by chatting!",
+            "**📈 Server Stocks**\n`/stock info` `/stock buy` `/stock sell` `/stock portfolio`",
+            "**🛡️ Moderation**\n`/kick` `/ban` `/timeout` `/purge`",
+            None,
+            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/stock setup`\n"
+            "`/config view` `/config welcome` `/config logs` `/config autorole`",
+        ).respond(interaction, ephemeral=True)
 
     @app_commands.command(description="Check the bot's latency")
     async def ping(self, interaction: discord.Interaction):
@@ -108,10 +109,15 @@ class General(commands.Cog):
 
         channel = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
         if channel:
-            embed = make_embed(f"Welcome to {guild.name}!",
-                               f"Hey {member.mention}, glad you're here! 🌺\nYou're member **#{guild.member_count}**.")
-            embed.set_thumbnail(url=member.display_avatar.url)
-            await channel.send(content=member.mention, embed=embed)
+            await Card(
+                discord.ui.Section(f"## Welcome to {guild.name}!\n"
+                                   f"Hey {member.mention}, glad you're here! 🌺\n"
+                                   f"You're our **#{guild.member_count:,}** member.",
+                                   accessory=discord.ui.Thumbnail(member.display_avatar.url)),
+                None,
+                "-# Make sure to read the rules, and open a ticket if you ever need help.",
+                banner="welcome",
+            ).send(channel)
 
 
 async def setup(bot: commands.Bot):

@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from core import ACCENT, add_coins, db, fail, get_coins, log, make_embed, reply, send_log
+from core import ACCENT, Card, add_coins, db, fail, get_coins, log, make_embed, reply, send_log
 
 DAILY_COINS = 100
 CHAT_COINS = 5        # coins per message...
@@ -146,21 +146,21 @@ class Economy(commands.Cog):
             return await fail(interaction, NO_STOCK)
         total, base, dividend = row
         sold = shares_sold(interaction.guild_id)
-        embed = make_embed(f"📈 {interaction.guild.name} Stock")
-        embed.add_field(name="Current price", value=f"{round(share_price(base, sold, total)):,} coins")
-        embed.add_field(name="Available", value=f"{total - sold:,} / {total:,}")
-        embed.add_field(name="Owned", value=f"{sold / total:.1%}")
-        embed.add_field(name="Market value", value=f"{round(trade_value(base, 0, total, sold)):,} coins")
-        embed.add_field(name="Daily dividend", value=f"{dividend:,} coins/share" if dividend else "None")
         top = db.execute("SELECT user_id, shares FROM holdings WHERE guild_id=? ORDER BY shares DESC LIMIT 5",
                          (interaction.guild_id,)).fetchall()
-        if top:
-            medals = ["🥇", "🥈", "🥉", "`4.`", "`5.`"]
-            embed.add_field(name="Top owners", inline=False, value="\n".join(
-                f"{medals[i]} <@{uid}> — {s:,} shares ({s / total:.1%})" for i, (uid, s) in enumerate(top)))
-        if interaction.guild.icon:
-            embed.set_thumbnail(url=interaction.guild.icon.url)
-        await interaction.response.send_message(embed=embed)
+        medals = ["🥇", "🥈", "🥉", "`4.`", "`5.`"]
+        owners = "\n".join(f"{medals[i]} <@{uid}> — **{s:,}** shares ({s / total:.1%})" for i, (uid, s) in enumerate(top))
+        await Card(
+            f"## 📈 {interaction.guild.name} Stock",
+            f"**💵 Price:** {round(share_price(base, sold, total)):,} coins per share\n"
+            f"**📦 Available:** {total - sold:,} of {total:,} shares ({sold / total:.1%} owned)\n"
+            f"**🏦 Market value:** {round(trade_value(base, 0, total, sold)):,} coins\n"
+            f"**💰 Daily dividend:** {f'{dividend:,} coins per share' if dividend else 'None'}",
+            None,
+            f"**🏆 Top owners**\n{owners or 'Nobody owns shares yet — be the first!'}",
+            "-# Buy with `/stock buy` · Sell with `/stock sell` · Check yours with `/stock portfolio`",
+            banner="stocks",
+        ).respond(interaction)
 
     @stock.command(description="Buy shares of this server")
     async def buy(self, interaction: discord.Interaction, amount: app_commands.Range[int, 1, 1_000_000]):

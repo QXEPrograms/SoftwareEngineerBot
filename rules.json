@@ -1,0 +1,53 @@
+{
+  "intro": "Find all of our rules using the dropdown below. Please review them before taking part. Breaking these rules will result in moderation!",
+  "note": "Failure to follow these rules will result in moderation. — Hawaii Studio",
+  "sections": [
+    {
+      "name": "Discord Rules",
+      "emoji": "📜",
+      "description": "How everyone is expected to act",
+      "rules": [
+        "Respect everyone. No harassment, hate speech, or discrimination.",
+        "No spamming, excessive caps, or mass pinging.",
+        "No advertising, including in DMs.",
+        "Keep content SFW. No NSFW, gore, or disturbing content.",
+        "Follow the [Discord Terms of Service](https://discord.com/terms).",
+        "Staff decisions are final. Appeal through a ticket, not in public chat."
+      ]
+    },
+    {
+      "name": "Voice Chat Rules",
+      "emoji": "🎙️",
+      "description": "Keeping voice channels enjoyable",
+      "rules": [
+        "No loud noises, soundboards, or voice changers that disrupt others.",
+        "Don't talk over people or interrupt on purpose.",
+        "Don't record anyone without their permission.",
+        "Keep music in the music channels."
+      ]
+    },
+    {
+      "name": "Studio Rules",
+      "emoji": "🔧",
+      "description": "Protecting our work and creators",
+      "rules": [
+        "Never share or leak studio work, assets, or code without permission.",
+        "Give credit when you use someone else's work.",
+        "No stealing, reuploading, or reselling assets.",
+        "Keep feedback constructive and respectful.",
+        "Keep project discussion in the right channels."
+      ]
+    },
+    {
+      "name": "Support & Tickets",
+      "emoji": "🎫",
+      "description": "How to get help from staff",
+      "rules": [
+        "Open a ticket for help instead of DMing staff.",
+        "One ticket per issue, and please be patient.",
+        "Explain your issue clearly and include screenshots if you can.",
+        "Don't open tickets as a joke. Misuse will result in moderation."
+      ]
+    }
+  ]
+}

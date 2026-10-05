@@ -105,6 +105,43 @@ async def send_log(guild: discord.Guild, embed: discord.Embed, file: discord.Fil
         log.warning("Couldn't post to the log channel in %s", guild)
 
 
+ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+
+
+class Card(discord.ui.LayoutView):
+    """A branded panel: optional banner image, content, then the Hawaii Studio footer strip.
+
+    Each part can be a string (text, markdown allowed), None (a divider line), or any layout item
+    such as an ActionRow of buttons or a Section with a thumbnail.
+    """
+
+    def __init__(self, *parts, banner: str | None = None, footer=True, color=BRAND):
+        super().__init__(timeout=None)
+        self.images = [name for name in (banner, "footer" if footer else None) if name]
+        container = discord.ui.Container(accent_colour=color)
+        if banner:
+            container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(f"attachment://{banner}.png")))
+        for part in parts:
+            if part is None:
+                container.add_item(discord.ui.Separator())
+            elif isinstance(part, str):
+                container.add_item(discord.ui.TextDisplay(part))
+            else:
+                container.add_item(part)
+        if footer:
+            container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem("attachment://footer.png")))
+        self.add_item(container)
+
+    def files(self):
+        return [discord.File(os.path.join(ASSETS, f"{name}.png"), filename=f"{name}.png") for name in self.images]
+
+    async def send(self, target: discord.abc.Messageable):
+        return await target.send(view=self, files=self.files())
+
+    async def respond(self, interaction: discord.Interaction, ephemeral=False):
+        await interaction.response.send_message(view=self, files=self.files(), ephemeral=ephemeral)
+
+
 def owner_only():
     return app_commands.check(lambda interaction: interaction.user.id == OWNER_ID)
 

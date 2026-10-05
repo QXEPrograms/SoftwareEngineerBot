@@ -3,10 +3,9 @@ import io
 from datetime import datetime, timezone
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, ERROR, fail, get_setting, log, make_embed, reply, send_log, set_setting
+from core import ACCENT, ERROR, Card, fail, get_setting, log, make_embed, reply, send_log
 
 closing: set[int] = set()  # ticket channels currently being closed
 
@@ -26,12 +25,11 @@ async def build_transcript(channel: discord.TextChannel) -> tuple[str, int]:
     return "\n".join(lines), count
 
 
-class TicketPanel(discord.ui.View):
+class OpenTicketButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(timeout=None)
+        super().__init__(label="Open Ticket", style=discord.ButtonStyle.primary, emoji="🎫", custom_id="ticket:open")
 
-    @discord.ui.button(label="Open Ticket", style=discord.ButtonStyle.primary, emoji="🎫", custom_id="ticket:open")
-    async def open_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def callback(self, interaction: discord.Interaction):
         guild, user = interaction.guild, interaction.user
         topic = f"ticket:{user.id}"
         existing = discord.utils.get(guild.text_channels, topic=topic)
@@ -51,19 +49,15 @@ class TicketPanel(discord.ui.View):
         channel = await guild.create_text_channel(
             f"ticket-{user.name}", topic=topic, overwrites=overwrites,
             category=guild.get_channel(get_setting(guild.id, "ticket_category") or 0))
-        embed = make_embed("🎫 Ticket Opened",
-                           f"Thanks {user.mention}! Describe what you need and a staff member will be with you shortly.")
-        await channel.send(content=" ".join(m.mention for m in (user, support_role) if m), embed=embed,
-                           view=TicketClose())
+        await ticket_opened(user, support_role).send(channel)
         await reply(interaction, description=f"Your ticket is ready: {channel.mention}", color=ACCENT, ephemeral=True)
 
 
-class TicketClose(discord.ui.View):
+class CloseTicketButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(timeout=None)
+        super().__init__(label="Close Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket:close")
 
-    @discord.ui.button(label="Close Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket:close")
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def callback(self, interaction: discord.Interaction):
         channel = interaction.channel
         if channel.id in closing:
             return await fail(interaction, "This ticket is already closing.")
@@ -99,25 +93,35 @@ class TicketClose(discord.ui.View):
             closing.discard(channel.id)
 
 
+def ticket_panel() -> Card:
+    return Card(
+        "### 🎫 Need help?\nClick the button below to open a **private ticket** with our team.",
+        None,
+        "**Before you open a ticket**\n"
+        "• Explain your issue clearly\n"
+        "• Include screenshots if you can\n"
+        "• Be patient — we'll reply as soon as possible",
+        discord.ui.ActionRow(OpenTicketButton()),
+        banner="support",
+    )
+
+
+def ticket_opened(user: discord.Member, support_role: discord.Role | None) -> Card:
+    who = support_role.mention if support_role else "A staff member"
+    return Card(
+        f"### 🎫 Ticket Opened\nThanks {user.mention}! Tell us what you need and {who} will be with you shortly.",
+        None,
+        "-# When your issue is solved, close the ticket below. A transcript will be saved.",
+        discord.ui.ActionRow(CloseTicketButton()),
+    )
+
+
 class Tickets(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        bot.add_view(TicketPanel())
-        bot.add_view(TicketClose())
-
-    @app_commands.command(description="Post a ticket panel in this channel")
-    @app_commands.describe(category="Where new tickets go", support_role="Role that can see and answer tickets")
-    @app_commands.default_permissions(manage_guild=True)
-    @app_commands.guild_only()
-    async def ticketpanel(self, interaction: discord.Interaction, category: discord.CategoryChannel | None = None,
-                          support_role: discord.Role | None = None):
-        if category:
-            set_setting(interaction.guild_id, "ticket_category", category.id)
-        if support_role:
-            set_setting(interaction.guild_id, "support_role", support_role.id)
-        embed = make_embed("🎫 Support Tickets", "Need help? Click the button below to open a private ticket with our team.")
-        await interaction.channel.send(embed=embed, view=TicketPanel())
-        await reply(interaction, description="Ticket panel posted.", color=ACCENT, ephemeral=True)
+        # Re-register the buttons so panels keep working after restarts
+        bot.add_view(Card(discord.ui.ActionRow(OpenTicketButton()), footer=False))
+        bot.add_view(Card(discord.ui.ActionRow(CloseTicketButton()), footer=False))
 
 
 async def setup(bot: commands.Bot):
