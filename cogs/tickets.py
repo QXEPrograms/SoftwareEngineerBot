@@ -1,13 +1,20 @@
 import asyncio
-import io
 from datetime import datetime, timezone
 
 import discord
 from discord.ext import commands
 
-from core import ACCENT, ERROR, Card, fail, get_setting, log, make_embed, reply, send_log
+from core import ACCENT, ERROR, Card, fail, get_setting, log, reply, send_log
 
 closing: set[int] = set()  # ticket channels currently being closed
+
+
+def component_text(components):
+    """Text inside the bot's card messages, which have no regular message content."""
+    for component in components:
+        if getattr(component, "content", None):
+            yield component.content
+        yield from component_text(getattr(component, "children", []))
 
 
 async def build_transcript(channel: discord.TextChannel) -> tuple[str, int]:
@@ -16,7 +23,7 @@ async def build_transcript(channel: discord.TextChannel) -> tuple[str, int]:
     count = 0
     async for message in channel.history(limit=None, oldest_first=True):
         count += 1
-        text = message.content
+        text = " ".join([message.content, *component_text(message.components)])
         for embed in message.embeds:
             text += " [embed] " + " — ".join(filter(None, [embed.title, embed.description]))
         for attachment in message.attachments:
@@ -67,21 +74,21 @@ class CloseTicketButton(discord.ui.Button):
                                                  "Saving transcript and deleting in 5 seconds...")
             transcript, count = await build_transcript(channel)
             opener_id = int(channel.topic.split(":")[1]) if channel.topic and channel.topic.startswith("ticket:") else None
-            filename = f"{channel.name}.txt"
+            attachment = [(f"{channel.name}.txt", transcript.encode())]
 
-            embed = make_embed("🎫 Ticket Closed", color=ERROR)
-            embed.add_field(name="Ticket", value=channel.name)
-            embed.add_field(name="Opened by", value=f"<@{opener_id}>" if opener_id else "Unknown")
-            embed.add_field(name="Closed by", value=interaction.user.mention)
-            embed.add_field(name="Messages", value=str(count))
-            await send_log(interaction.guild, embed, discord.File(io.BytesIO(transcript.encode()), filename))
+            await send_log(interaction.guild, Card(
+                f"### 🎫 Ticket Closed\n**Ticket:** {channel.name}\n"
+                f"**Opened by:** {f'<@{opener_id}>' if opener_id else 'Unknown'}\n"
+                f"**Closed by:** {interaction.user.mention}\n**Messages:** {count}",
+                footer=False, color=ERROR, attachments=attachment))
 
             opener = interaction.guild.get_member(opener_id) if opener_id else None
             if opener:
                 try:
-                    await opener.send(embed=make_embed("🎫 Your ticket was closed",
-                                                       f"Here's a copy of your ticket in **{interaction.guild.name}**."),
-                                      file=discord.File(io.BytesIO(transcript.encode()), filename))
+                    await Card(f"### 🎫 Your ticket was closed\n"
+                               f"Thanks for reaching out to **{interaction.guild.name}**! "
+                               f"Here's a copy of your conversation.",
+                               banner="support", attachments=attachment).send(opener)
                 except discord.HTTPException:
                     pass  # DMs closed
 
@@ -113,6 +120,7 @@ def ticket_opened(user: discord.Member, support_role: discord.Role | None) -> Ca
         None,
         "-# When your issue is solved, close the ticket below. A transcript will be saved.",
         discord.ui.ActionRow(CloseTicketButton()),
+        pings=discord.AllowedMentions(users=True, roles=True),
     )
 
 

@@ -1,9 +1,10 @@
-"""Shared config, database and embed helpers used by every cog."""
+"""Shared config, database and the branded Card used by every cog."""
+import io
 import logging
 import os
 import re
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import discord
 from discord import app_commands
@@ -21,7 +22,6 @@ ACCENT = discord.Color(0x00E9FD)  # logo cyan, used for success
 ERROR = discord.Color(0xFF4D6D)
 
 log = logging.getLogger("bot")
-footer_icon = None  # set to the bot's avatar once logged in
 
 # ---------- Database ----------
 DB_PATH = (os.getenv("DB_PATH") or "").strip() or os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.db")
@@ -75,49 +75,26 @@ def add_coins(user_id, amount):
     db.execute("UPDATE wallets SET coins = coins + ? WHERE user_id=?", (amount, user_id))
 
 
-# ---------- Embeds & replies ----------
-def make_embed(title=None, description=None, color=BRAND):
-    embed = discord.Embed(title=title, description=description, color=color, timestamp=datetime.now(timezone.utc))
-    embed.set_footer(text=BRAND_NAME, icon_url=footer_icon)
-    return embed
-
-
-async def reply(interaction: discord.Interaction, title=None, description=None, *, color=BRAND, ephemeral=False):
-    embed = make_embed(title, description, color)
-    if interaction.response.is_done():
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-    else:
-        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
-
-
-async def fail(interaction: discord.Interaction, message: str):
-    await reply(interaction, description=f"❌ {message}", color=ERROR, ephemeral=True)
-
-
-async def send_log(guild: discord.Guild, embed: discord.Embed, file: discord.File | None = None):
-    """Post to the server's staff log channel, if one is set."""
-    channel = guild.get_channel(get_setting(guild.id, "log_channel") or 0)
-    if not channel:
-        return
-    try:
-        await channel.send(embed=embed, **({"file": file} if file else {}))
-    except discord.HTTPException:
-        log.warning("Couldn't post to the log channel in %s", guild)
-
-
+# ---------- Cards (every message the bot sends) ----------
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+NO_PINGS = discord.AllowedMentions.none()
 
 
 class Card(discord.ui.LayoutView):
-    """A branded panel: optional banner image, content, then the Hawaii Studio footer strip.
+    """A branded message: optional banner image, content, then the Hawaii Studio footer strip.
 
     Each part can be a string (text, markdown allowed), None (a divider line), or any layout item
     such as an ActionRow of buttons or a Section with a thumbnail.
+    `attachments` is a list of (filename, bytes) shown as downloadable files.
+    Mentions don't ping anyone unless `pings` allows it.
     """
 
-    def __init__(self, *parts, banner: str | None = None, footer=True, color=BRAND):
+    def __init__(self, *parts, banner: str | None = None, footer=True, color=BRAND,
+                 attachments=(), pings: discord.AllowedMentions = NO_PINGS):
         super().__init__(timeout=None)
         self.images = [name for name in (banner, "footer" if footer else None) if name]
+        self.attachments = list(attachments)
+        self.pings = pings
         container = discord.ui.Container(accent_colour=color)
         if banner:
             container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(f"attachment://{banner}.png")))
@@ -128,18 +105,49 @@ class Card(discord.ui.LayoutView):
                 container.add_item(discord.ui.TextDisplay(part))
             else:
                 container.add_item(part)
+        for filename, _ in self.attachments:
+            container.add_item(discord.ui.File(f"attachment://{filename}"))
         if footer:
             container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem("attachment://footer.png")))
         self.add_item(container)
 
     def files(self):
-        return [discord.File(os.path.join(ASSETS, f"{name}.png"), filename=f"{name}.png") for name in self.images]
+        images = [discord.File(os.path.join(ASSETS, f"{name}.png"), filename=f"{name}.png") for name in self.images]
+        return images + [discord.File(io.BytesIO(data), filename=name) for name, data in self.attachments]
 
     async def send(self, target: discord.abc.Messageable):
-        return await target.send(view=self, files=self.files())
+        return await target.send(view=self, files=self.files(), allowed_mentions=self.pings)
 
     async def respond(self, interaction: discord.Interaction, ephemeral=False):
-        await interaction.response.send_message(view=self, files=self.files(), ephemeral=ephemeral)
+        kwargs = dict(view=self, files=self.files(), ephemeral=ephemeral, allowed_mentions=self.pings)
+        if interaction.response.is_done():
+            await interaction.followup.send(**kwargs)
+        else:
+            await interaction.response.send_message(**kwargs)
+
+
+def text(title=None, description=None):
+    return "\n".join(part for part in (f"### {title}" if title else None, description) if part)
+
+
+async def reply(interaction: discord.Interaction, title=None, description=None, *, color=BRAND, ephemeral=False,
+                banner=None, pings=NO_PINGS):
+    await Card(text(title, description), banner=banner, color=color, pings=pings).respond(interaction, ephemeral)
+
+
+async def fail(interaction: discord.Interaction, message: str):
+    await Card(f"âŒ {message}", footer=False, color=ERROR).respond(interaction, ephemeral=True)
+
+
+async def send_log(guild: discord.Guild, card: Card):
+    """Post to the server's staff log channel, if one is set."""
+    channel = guild.get_channel(get_setting(guild.id, "log_channel") or 0)
+    if not channel:
+        return
+    try:
+        await card.send(channel)
+    except discord.HTTPException:
+        log.warning("Couldn't post to the log channel in %s", guild)
 
 
 def owner_only():

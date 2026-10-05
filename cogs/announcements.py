@@ -11,7 +11,7 @@ def announcement(title: str, message: str, ping: bool = False) -> Card:
     parts = ["@everyone"] if ping else []
     return Card(*parts, f"## 📢 {title}", None, message.replace("\\n", "\n"),
                 f"-# Posted by {BRAND_NAME} · {discord.utils.format_dt(datetime.now(timezone.utc), 'f')}",
-                banner="announcement")
+                banner="announcement", pings=discord.AllowedMentions(everyone=ping))
 
 
 class Announcements(commands.Cog):

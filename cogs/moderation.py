@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, ERROR, fail, make_embed, reply, send_log
+from core import ACCENT, ERROR, Card, fail, reply, send_log
 
 
 def moderation_problem(interaction: discord.Interaction, member: discord.Member):
@@ -22,21 +22,29 @@ def moderation_problem(interaction: discord.Interaction, member: discord.Member)
 async def notify(member: discord.Member, action: str, reason: str):
     """DM the member before the action, so they can still receive it."""
     try:
-        await member.send(embed=make_embed(description=f"You were **{action}** from **{member.guild.name}**.\n"
-                                                       f"**Reason:** {reason}", color=ERROR))
+        await Card(f"### 🛡️ You were {action}\nYou were **{action}** from **{member.guild.name}**.",
+                   None, f"**Reason:** {reason}", banner="moderation", color=ERROR).send(member)
     except discord.HTTPException:
         pass  # DMs closed
 
 
-async def log_action(interaction: discord.Interaction, title: str, member: discord.Member, reason: str, extra=None):
-    embed = make_embed(title, color=ERROR)
-    embed.add_field(name="Member", value=f"{member.mention}\n`{member}`")
-    embed.add_field(name="Moderator", value=interaction.user.mention)
-    if extra:
-        embed.add_field(name=extra[0], value=extra[1])
-    embed.add_field(name="Reason", value=reason, inline=False)
-    embed.set_thumbnail(url=member.display_avatar.url)
-    await send_log(interaction.guild, embed)
+async def log_action(interaction: discord.Interaction, title: str, member: discord.Member, reason: str, extra=""):
+    await send_log(interaction.guild, Card(
+        discord.ui.Section(f"### {title}\n"
+                           f"**Member:** {member.mention} (`{member}`)\n"
+                           f"**Moderator:** {interaction.user.mention}{extra}\n"
+                           f"**Reason:** {reason}",
+                           accessory=discord.ui.Thumbnail(member.display_avatar.url)),
+        footer=False, color=ERROR))
+
+
+async def announce_action(interaction: discord.Interaction, title: str, member: discord.Member, reason: str, extra=""):
+    await Card(
+        discord.ui.Section(f"### {title}\n**{member}**{extra}\n**Reason:** {reason}",
+                           accessory=discord.ui.Thumbnail(member.display_avatar.url)),
+        f"-# Action by {interaction.user.mention}",
+        banner="moderation", color=ERROR,
+    ).respond(interaction)
 
 
 class Moderation(commands.Cog):
@@ -51,7 +59,7 @@ class Moderation(commands.Cog):
             return await fail(interaction, problem)
         await notify(member, "kicked", reason)
         await member.kick(reason=f"{interaction.user}: {reason}")
-        await reply(interaction, "👢 Member Kicked", f"**{member}** was kicked.\n**Reason:** {reason}")
+        await announce_action(interaction, "👢 Member Kicked", member, reason)
         await log_action(interaction, "👢 Member Kicked", member, reason)
 
     @app_commands.command(description="Ban a member")
@@ -62,7 +70,7 @@ class Moderation(commands.Cog):
             return await fail(interaction, problem)
         await notify(member, "banned", reason)
         await member.ban(reason=f"{interaction.user}: {reason}")
-        await reply(interaction, "🔨 Member Banned", f"**{member}** was banned.\n**Reason:** {reason}")
+        await announce_action(interaction, "🔨 Member Banned", member, reason)
         await log_action(interaction, "🔨 Member Banned", member, reason)
 
     @app_commands.command(description="Timeout a member")
@@ -74,9 +82,8 @@ class Moderation(commands.Cog):
         if problem := moderation_problem(interaction, member):
             return await fail(interaction, problem)
         await member.timeout(timedelta(minutes=minutes), reason=f"{interaction.user}: {reason}")
-        await reply(interaction, "⏳ Member Timed Out",
-                    f"**{member}** was timed out for **{minutes} min**.\n**Reason:** {reason}")
-        await log_action(interaction, "⏳ Member Timed Out", member, reason, ("Duration", f"{minutes} min"))
+        await announce_action(interaction, "⏳ Member Timed Out", member, reason, f" for **{minutes} min**")
+        await log_action(interaction, "⏳ Member Timed Out", member, reason, f"\n**Duration:** {minutes} min")
 
     @app_commands.command(description="Delete recent messages in this channel")
     @app_commands.default_permissions(manage_messages=True)
@@ -85,11 +92,10 @@ class Moderation(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         deleted = await interaction.channel.purge(limit=amount)
         await reply(interaction, description=f"🧹 Deleted **{len(deleted)}** messages.", color=ACCENT, ephemeral=True)
-        embed = make_embed("🧹 Messages Purged", color=ERROR)
-        embed.add_field(name="Channel", value=interaction.channel.mention)
-        embed.add_field(name="Moderator", value=interaction.user.mention)
-        embed.add_field(name="Deleted", value=str(len(deleted)))
-        await send_log(interaction.guild, embed)
+        await send_log(interaction.guild, Card(
+            f"### 🧹 Messages Purged\n**Channel:** {interaction.channel.mention}\n"
+            f"**Moderator:** {interaction.user.mention}\n**Deleted:** {len(deleted)}",
+            footer=False, color=ERROR))
 
 
 async def setup(bot: commands.Bot):

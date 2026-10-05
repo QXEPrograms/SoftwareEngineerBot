@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, BRAND_NAME, Card, fail, get_setting, log, make_embed, reply, set_setting
+from core import ACCENT, BRAND_NAME, Card, fail, get_setting, log, reply, set_setting
 
 EIGHTBALL = ["Yes.", "No.", "Maybe.", "Definitely!", "Ask again later.", "Very doubtful.", "Without a doubt.",
              "Signs point to yes.", "Don't count on it."]
@@ -32,6 +32,7 @@ class General(commands.Cog):
             None,
             "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/stock setup`\n"
             "`/config view` `/config welcome` `/config logs` `/config autorole`",
+            banner="commands",
         ).respond(interaction, ephemeral=True)
 
     @app_commands.command(description="Check the bot's latency")
@@ -66,13 +67,18 @@ class General(commands.Cog):
                 return "Not set"
             return {"channel": f"<#{value}>", "role": f"<@&{value}>"}[kind]
 
-        embed = make_embed("⚙️ Server Settings")
-        embed.add_field(name="Welcome channel", value=show("welcome_channel", "channel"))
-        embed.add_field(name="Staff log channel", value=show("log_channel", "channel"))
-        embed.add_field(name="Auto role", value=show("autorole", "role"))
-        embed.add_field(name="Ticket category", value=show("ticket_category", "channel"))
-        embed.add_field(name="Ticket support role", value=show("support_role", "role"))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await Card(
+            f"## ⚙️ Server Settings\nHow I'm set up in **{interaction.guild.name}**.",
+            None,
+            f"**👋 Welcome channel:** {show('welcome_channel', 'channel')}\n"
+            f"**📋 Staff log channel:** {show('log_channel', 'channel')}\n"
+            f"**🏷️ Auto role:** {show('autorole', 'role')}",
+            None,
+            f"**🎫 Ticket category:** {show('ticket_category', 'channel')}\n"
+            f"**🛟 Ticket support role:** {show('support_role', 'role')}",
+            "-# Change these with `/config welcome`, `/config logs`, `/config autorole` and `/panel tickets`",
+            banner="settings",
+        ).respond(interaction, ephemeral=True)
 
     @config.command(name="welcome", description="Set the welcome channel (leave empty to turn off)")
     async def config_welcome(self, interaction: discord.Interaction, channel: discord.TextChannel | None = None):
@@ -116,7 +122,7 @@ class General(commands.Cog):
                                    accessory=discord.ui.Thumbnail(member.display_avatar.url)),
                 None,
                 "-# Make sure to read the rules, and open a ticket if you ever need help.",
-                banner="welcome",
+                banner="welcome", pings=discord.AllowedMentions(users=True),
             ).send(channel)
 
 

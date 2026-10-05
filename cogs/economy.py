@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from core import ACCENT, Card, add_coins, db, fail, get_coins, log, make_embed, reply, send_log
+from core import ACCENT, Card, add_coins, db, fail, get_coins, log, reply, send_log
 
 DAILY_COINS = 100
 CHAT_COINS = 5        # coins per message...
@@ -74,7 +74,9 @@ class Economy(commands.Cog):
     @app_commands.command(description="Check your (or someone's) coin balance")
     async def balance(self, interaction: discord.Interaction, member: discord.Member | None = None):
         member = member or interaction.user
-        await reply(interaction, description=f"💰 {member.mention} has **{get_coins(member.id):,}** coins.")
+        await Card(discord.ui.Section(f"### 💰 Wallet\n{member.mention} has **{get_coins(member.id):,}** coins.",
+                                      accessory=discord.ui.Thumbnail(member.display_avatar.url)),
+                   "-# Earn more with `/daily` or just by chatting!").respond(interaction)
 
     @app_commands.command(description="Claim your daily coins")
     async def daily(self, interaction: discord.Interaction):
@@ -88,8 +90,9 @@ class Economy(commands.Cog):
         with db:
             add_coins(uid, DAILY_COINS)
             db.execute("UPDATE wallets SET last_daily=? WHERE user_id=?", (now.isoformat(), uid))
-        await reply(interaction, description=f"💰 You claimed **{DAILY_COINS}** coins! Balance: **{get_coins(uid):,}**",
-                    color=ACCENT)
+        await reply(interaction, "🎁 Daily Reward",
+                    f"You claimed **{DAILY_COINS}** coins!\n**Balance:** {get_coins(uid):,} coins\n"
+                    f"-# Come back {discord.utils.format_dt(now + timedelta(hours=24), 'R')} for more.", color=ACCENT)
 
     @app_commands.command(description="Send coins to another member")
     @app_commands.guild_only()
@@ -103,7 +106,7 @@ class Economy(commands.Cog):
             add_coins(interaction.user.id, -amount)
             add_coins(member.id, amount)
         await reply(interaction, "💸 Payment Sent", f"{interaction.user.mention} sent **{amount:,}** coins to {member.mention}.",
-                    color=ACCENT)
+                    color=ACCENT, pings=discord.AllowedMentions(users=[member]))
 
     @app_commands.command(description="See the richest members in this server")
     @app_commands.guild_only()
@@ -118,7 +121,9 @@ class Economy(commands.Cog):
             return await fail(interaction, "Nobody has any coins yet. Try `/daily`!")
         medals = ["🥇", "🥈", "🥉"] + [f"`{n}.`" for n in range(4, 11)]
         lines = [f"{medals[i]} <@{uid}> — **{coins:,}** coins" for i, (uid, coins) in enumerate(top)]
-        await reply(interaction, f"🏆 {interaction.guild.name} Leaderboard", "\n".join(lines))
+        await Card(f"## 🏆 {interaction.guild.name} Leaderboard", None, "\n".join(lines),
+                   "-# Earn coins with `/daily`, by chatting, or from stock dividends.",
+                   banner="leaderboard").respond(interaction)
 
     # ---------- Stocks ----------
     @stock.command(description="(Admin) Offer shares of this server")
@@ -217,7 +222,8 @@ class Economy(commands.Cog):
         if dividend:
             text += f"**Daily dividend:** {owned * dividend:,} coins\n"
         text += f"**Wallet:** {get_coins(uid):,} coins"
-        await reply(interaction, "📊 Your Portfolio", text, ephemeral=True)
+        await Card(f"## 📊 Your Portfolio\nYour stake in **{interaction.guild.name}**.", None, text,
+                   banner="stocks").respond(interaction, ephemeral=True)
 
     @tasks.loop(minutes=30)
     async def pay_dividends(self):
@@ -236,8 +242,9 @@ class Economy(commands.Cog):
             if last and holders and guild:
                 paid = sum(s for _, s in holders) * dividend
                 log.info("Paid %d coins in dividends in %s", paid, guild)
-                await send_log(guild, make_embed("📈 Dividends Paid",
-                                                 f"Paid **{paid:,}** coins to **{len(holders)}** shareholders."))
+                await send_log(guild, Card(f"### 📈 Dividends Paid\n"
+                                           f"Paid **{paid:,}** coins to **{len(holders)}** shareholders.",
+                                           footer=False))
 
     @pay_dividends.before_loop
     async def before_dividends(self):

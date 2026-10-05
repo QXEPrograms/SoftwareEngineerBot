@@ -20,6 +20,10 @@ BANNERS = {
     "welcome": ("WELCOME", "Aloha! Glad you {made it}."),
     "announcement": ("ANNOUNCEMENT", "The latest from {Hawaii Studio}."),
     "stocks": ("SERVER STOCKS", "Own a piece of {the studio}."),
+    "moderation": ("MODERATION", "Keeping the community {safe}."),
+    "leaderboard": ("LEADERBOARD", "The richest members of {the studio}."),
+    "settings": ("SETTINGS", "Your server, {your way}."),
+    "commands": ("COMMANDS", "Everything I can {do for you}."),
 }
 
 

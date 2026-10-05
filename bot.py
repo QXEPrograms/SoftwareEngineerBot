@@ -16,7 +16,6 @@ class HawaiiBot(commands.Bot):
                          activity=discord.Activity(type=discord.ActivityType.watching, name=core.BRAND_NAME))
 
     async def setup_hook(self):
-        core.footer_icon = self.user.display_avatar.url
         for extension in EXTENSIONS:
             await self.load_extension(extension)
         self.tree.error(on_app_command_error)
