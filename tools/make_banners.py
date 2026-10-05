@@ -24,6 +24,7 @@ BANNERS = {
     "leaderboard": ("LEADERBOARD", "The richest members of {the studio}."),
     "settings": ("SETTINGS", "Your server, {your way}."),
     "commands": ("COMMANDS", "Everything I can {do for you}."),
+    "verify": ("VERIFICATION", "Unlock {the full studio}."),
 }
 
 

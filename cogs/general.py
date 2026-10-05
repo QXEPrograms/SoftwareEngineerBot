@@ -30,7 +30,7 @@ class General(commands.Cog):
             "**📈 Server Stocks**\n`/stock info` `/stock buy` `/stock sell` `/stock portfolio`",
             "**🛡️ Moderation**\n`/kick` `/ban` `/timeout` `/purge`",
             None,
-            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/stock setup`\n"
+            "**⚙️ Setup** (staff)\n`/panel rules` `/panel verify` `/panel tickets` `/stock setup`\n"
             "`/config view` `/config welcome` `/config logs` `/config autorole`",
             banner="commands",
         ).respond(interaction, ephemeral=True)
@@ -72,11 +72,13 @@ class General(commands.Cog):
             None,
             f"**👋 Welcome channel:** {show('welcome_channel', 'channel')}\n"
             f"**📋 Staff log channel:** {show('log_channel', 'channel')}\n"
-            f"**🏷️ Auto role:** {show('autorole', 'role')}",
+            f"**🏷️ Auto role:** {show('autorole', 'role')}\n"
+            f"**✅ Verify role:** {show('verify_role', 'role')}",
             None,
             f"**🎫 Ticket category:** {show('ticket_category', 'channel')}\n"
             f"**🛟 Ticket support role:** {show('support_role', 'role')}",
-            "-# Change these with `/config welcome`, `/config logs`, `/config autorole` and `/panel tickets`",
+            "-# Change these with `/config welcome`, `/config logs`, `/config autorole`, `/panel verify` "
+            "and `/panel tickets`",
             banner="settings",
         ).respond(interaction, ephemeral=True)
 

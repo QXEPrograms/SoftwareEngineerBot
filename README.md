@@ -8,7 +8,7 @@ Runs 24/7 on Railway. Every push to the `main` branch on GitHub redeploys it aut
 | `bot.py` | Starts the bot and loads everything |
 | `core.py` | Brand colors, database, shared helpers, the branded `Card` layout |
 | `cogs/general.py` | `/help`, fun commands, `/config`, welcome messages, auto role |
-| `cogs/panels.py` | `/panel rules` and `/panel tickets` |
+| `cogs/panels.py` | `/panel rules`, `/panel verify` and `/panel tickets` |
 | `cogs/tickets.py` | Ticket buttons, transcripts |
 | `cogs/moderation.py` | Kick, ban, timeout, purge + mod log |
 | `cogs/economy.py` | Coins, `/pay`, `/leaderboard`, server stocks, dividends |
@@ -20,10 +20,12 @@ Runs 24/7 on Railway. Every push to the `main` branch on GitHub redeploys it aut
 ## First-time server setup
 1. `/config logs #staff-logs` (mod actions, ticket transcripts and dividend payouts go here)
 2. `/config welcome #welcome`
-3. `/config autorole @Member`
+3. `/panel verify role:@Member` in your verify channel. Hide the other channels from `@everyone` so only verified members see them.
 4. `/panel rules` in your rules channel
 5. `/panel tickets category:Tickets support_role:@Staff` in your support channel
 6. `/stock setup total_shares:1000 price:50 dividend:1`
+
+If you use the verify button, don't also give `@Member` with `/config autorole`, or new members skip verification.
 
 ## Changing the rules
 Edit `rules.json`, push to GitHub, then run `/panel rules` again and delete the old panel.
