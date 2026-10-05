@@ -4,17 +4,18 @@ from discord.ext import commands
 
 import core
 
-EXTENSIONS = ["cogs.general", "cogs.tickets", "cogs.stocks", "cogs.panels", "cogs.moderation", "cogs.economy",
-              "cogs.announcements"]
+EXTENSIONS = ["cogs.security", "cogs.general", "cogs.tickets", "cogs.stocks", "cogs.panels", "cogs.moderation",
+              "cogs.economy", "cogs.announcements"]
 
 
 class HawaiiBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
-        intents.members = True          # welcome messages, auto role, leaderboard
-        intents.message_content = True  # ticket transcripts
+        intents.members = True          # welcome messages, auto role, leaderboard, raid detection
+        intents.message_content = True  # ticket transcripts, spam and link filters
         super().__init__(command_prefix=commands.when_mentioned, intents=intents, help_command=None,
-                         activity=discord.Activity(type=discord.ActivityType.watching, name=core.BRAND_NAME))
+                         activity=discord.Activity(type=discord.ActivityType.watching,
+                                                   name=f"over {core.BRAND_NAME} 🛡️ 24/7"))
 
     async def setup_hook(self):
         for extension in EXTENSIONS:

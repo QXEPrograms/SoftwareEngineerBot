@@ -11,6 +11,7 @@ Runs 24/7 on Railway. Every push to the `main` branch on GitHub redeploys it aut
 | `cogs/panels.py` | `/panel rules`, `/panel tickets`, `/panel stocks`, `/panel boosters` and `/panel verify` |
 | `cogs/tickets.py` | Ticket types and their questions (`TICKET_TYPES`), transcripts |
 | `cogs/moderation.py` | Kick, ban, timeout, purge + mod log |
+| `cogs/security.py` | Anti-nuke, bot and permission guards, anti-raid, alt blocker, spam/invite/scam filters, lockdown |
 | `cogs/economy.py` | Coins, `/daily`, `/pay`, `/leaderboard` |
 | `cogs/stocks.py` | Stock market panel, `/stock add/edit/remove/portfolio`, Buy tickets and sales |
 | `cogs/announcements.py` | `/announce`, `/announceall`, `/schedule` |
@@ -32,6 +33,10 @@ If you use the verify button, don't also give `@Member` with `/config autorole`,
 ## Changing the rules
 Edit `rules.json`, push to GitHub, then run `/panel rules` again and delete the old panel.
 The first section is shown on the panel itself; every section appears in the dropdown.
+
+## Security
+`/security status` shows what's on; `/security config` turns protections on or off and sets the minimum account age (default 3 days). `/security lockdown` and `/security unlock` lock and restore every channel.
+Keep the bot's role at the **top** of the role list so it can stop anyone below it.
 
 ## Full access
 The bot owner (`OWNER_ID`) and the IDs in `MANAGERS` (a user or role ID, default `1473005622231564318`) can use every command, including `/announce` and `/schedule`. Change it in Railway's Variables tab.

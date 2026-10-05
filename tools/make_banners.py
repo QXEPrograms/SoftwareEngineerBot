@@ -26,6 +26,7 @@ BANNERS = {
     "commands": ("COMMANDS", "Everything I can {do for you}."),
     "verify": ("VERIFICATION", "Unlock {the full studio}."),
     "boosters": ("BOOSTER PERKS", "Thank you for {supporting us}."),
+    "security": ("SECURITY", "On duty {24/7}. No days off."),
 }
 
 

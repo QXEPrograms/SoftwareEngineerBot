@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from cogs.economy import BOOSTER_COINS
+from cogs.security import join_block_reason
 from core import (ACCENT, BOOST_PINK, BRAND_NAME, Card, fail, get_setting, is_booster, log, make_public, reply,
                   set_setting, staff_only)
 
@@ -29,7 +30,8 @@ class General(commands.Cog):
             "**🎲 Fun**\n`/8ball` `/roll` `/coinflip`",
             "**💰 Economy**\n`/daily` `/balance` `/pay` `/leaderboard`\n-# You also earn coins just by chatting!",
             "**📈 Stock Market**\nBuy server pieces from the stock market panel · `/stock portfolio`",
-            "**🛡️ Moderation**\n`/kick` `/ban` `/timeout` `/purge`",
+            "**🛡️ Moderation & Security**\n`/kick` `/ban` `/timeout` `/purge`\n"
+            "`/security status` `/security config` `/security lockdown` `/security unlock`",
             "**💎 Boosters**\n2× coins and priority tickets while you boost!",
             None,
             "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel stocks` `/panel boosters` `/panel verify`\n"
@@ -137,7 +139,7 @@ class General(commands.Cog):
                 log.warning("Couldn't give the auto role in %s", guild)
 
         channel = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
-        if channel:
+        if channel and not join_block_reason(member):  # security is removing them, so don't welcome
             verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
             how = (f"Head to {verify_channel.mention} to verify and unlock the rest of the server." if verify_channel
                    else "Verify to unlock the rest of the server.")

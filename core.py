@@ -47,10 +47,14 @@ CREATE TABLE IF NOT EXISTS stock_owners (listing_id INTEGER, user_id INTEGER, pi
                                          PRIMARY KEY (listing_id, user_id));
 CREATE TABLE IF NOT EXISTS stock_sales (channel_id INTEGER PRIMARY KEY, listing_id INTEGER, user_id INTEGER,
                                         pieces INTEGER, sold_at TEXT);
+CREATE TABLE IF NOT EXISTS lockdown_channels (guild_id INTEGER, channel_id INTEGER PRIMARY KEY, previous INTEGER);
 """)
 
 SETTINGS = ("welcome_channel", "ticket_category", "support_role", "log_channel", "autorole", "verify_role",
-            "verify_channel", "stock_panel_channel", "stock_panel_message")
+            "verify_channel", "stock_panel_channel", "stock_panel_message",
+            # security (unset = default from cogs/security.py)
+            "sec_spam", "sec_invites", "sec_links", "sec_mentions", "sec_raid", "sec_nuke", "sec_alt_days",
+            "sec_raid_until", "sec_prev_verification")
 
 
 def _ensure_columns(table, columns):
@@ -129,8 +133,8 @@ class Card(discord.ui.LayoutView):
         images = [discord.File(os.path.join(ASSETS, f"{name}.png"), filename=f"{name}.png") for name in self.images]
         return images + [discord.File(io.BytesIO(data), filename=name) for name, data in self.attachments]
 
-    async def send(self, target: discord.abc.Messageable):
-        return await target.send(view=self, files=self.files(), allowed_mentions=self.pings)
+    async def send(self, target: discord.abc.Messageable, **kwargs):
+        return await target.send(view=self, files=self.files(), allowed_mentions=self.pings, **kwargs)
 
     async def respond(self, interaction: discord.Interaction, ephemeral=False):
         kwargs = dict(view=self, files=self.files(), ephemeral=ephemeral, allowed_mentions=self.pings)
