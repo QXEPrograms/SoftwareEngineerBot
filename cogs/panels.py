@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, Card, fail, get_setting, log, reply, send_log, set_setting
+from core import ACCENT, Card, fail, get_setting, log, make_public, reply, send_log, set_setting
 from cogs.tickets import ticket_panel
 
 RULES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules.json")
@@ -98,14 +98,66 @@ def verify_panel(guild_name: str) -> Card:
     )
 
 
+def has_custom_id(components, custom_id):
+    return any(getattr(c, "custom_id", None) == custom_id or has_custom_id(getattr(c, "children", []), custom_id)
+               for c in components)
+
+
+async def find_verify_panel(guild: discord.Guild) -> discord.TextChannel | None:
+    """Find the channel holding a verify panel the bot posted earlier."""
+    for channel in guild.text_channels:
+        if not channel.permissions_for(guild.me).read_message_history:
+            continue
+        try:
+            async for message in channel.history(limit=30):
+                if message.author.id == guild.me.id and has_custom_id(message.components, "verify:button"):
+                    return channel
+        except discord.HTTPException:
+            continue
+    return None
+
+
 class Panels(commands.Cog):
     panel = app_commands.Group(name="panel", description="Post a branded panel in this channel", guild_only=True,
                                default_permissions=discord.Permissions(manage_guild=True))
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.checked_setup = False
         bot.add_view(Card(discord.ui.ActionRow(RulesSelect()), footer=False))
         bot.add_view(Card(discord.ui.ActionRow(VerifyButton()), footer=False))
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if self.checked_setup:  # on_ready also fires after reconnects
+            return
+        self.checked_setup = True
+        for guild in self.bot.guilds:
+            try:
+                await self.fix_verification_setup(guild)
+            except discord.HTTPException:
+                log.exception("Couldn't check the verification setup in %s", guild)
+
+    async def fix_verification_setup(self, guild: discord.Guild):
+        """Make sure unverified members can see the verify and welcome channels."""
+        if not guild.get_role(get_setting(guild.id, "verify_role") or 0):
+            return
+        changes = []
+        verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
+        if not verify_channel:
+            verify_channel = await find_verify_panel(guild)
+            if verify_channel:
+                set_setting(guild.id, "verify_channel", verify_channel.id)
+                changes.append(f"Found the verify panel in {verify_channel.mention}. Welcome messages now link to it.")
+        if verify_channel and await make_public(verify_channel, read_only=True):
+            changes.append(f"{verify_channel.mention} is now visible to everyone, read-only.")
+        welcome = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
+        if welcome and await make_public(welcome, read_only=False):
+            changes.append(f"{welcome.mention} is now visible to unverified members.")
+        if changes:
+            log.info("Updated verification setup in %s: %s", guild, changes)
+            await send_log(guild, Card("### 🔧 Verification Setup Updated\n" + "\n".join(f"• {c}" for c in changes),
+                                       footer=False, color=ACCENT))
 
     @panel.command(name="verify", description="Post a verify button that gives new members a role")
     @app_commands.describe(role="The role members get when they verify, e.g. @Member")
@@ -114,6 +166,7 @@ class Panels(commands.Cog):
             return await fail(interaction, problem)
         set_setting(interaction.guild_id, "verify_role", role.id)
         set_setting(interaction.guild_id, "verify_channel", interaction.channel_id)
+        await make_public(interaction.channel, read_only=True)
         await verify_panel(interaction.guild.name).send(interaction.channel)
         await reply(interaction, description=f"Verify panel posted. Members will get {role.mention}.",
                     color=ACCENT, ephemeral=True)

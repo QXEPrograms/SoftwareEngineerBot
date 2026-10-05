@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, BRAND_NAME, Card, fail, get_setting, log, reply, set_setting
+from core import ACCENT, BRAND_NAME, Card, fail, get_setting, log, make_public, reply, set_setting
 
 EIGHTBALL = ["Yes.", "No.", "Maybe.", "Definitely!", "Ask again later.", "Very doubtful.", "Without a doubt.",
              "Signs point to yes.", "Don't count on it."]
@@ -85,6 +85,8 @@ class General(commands.Cog):
     @config.command(name="welcome", description="Set the welcome channel (leave empty to turn off)")
     async def config_welcome(self, interaction: discord.Interaction, channel: discord.TextChannel | None = None):
         set_setting(interaction.guild_id, "welcome_channel", channel and channel.id)
+        if channel and get_setting(interaction.guild_id, "verify_role"):
+            await make_public(channel, read_only=False)  # unverified members need to see their welcome
         text = f"Welcome messages will be sent to {channel.mention}." if channel else "Welcome messages turned off."
         await reply(interaction, description=text, color=ACCENT, ephemeral=True)
 

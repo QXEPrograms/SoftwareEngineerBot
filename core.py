@@ -151,6 +151,19 @@ async def send_log(guild: discord.Guild, card: Card):
         log.warning("Couldn't post to the log channel in %s", guild)
 
 
+async def make_public(channel: discord.TextChannel, *, read_only: bool) -> bool:
+    """Let everyone (including unverified members) see a channel. Returns True if anything changed."""
+    everyone = channel.guild.default_role
+    overwrite = channel.overwrites_for(everyone)
+    if overwrite.view_channel and overwrite.read_message_history and (not read_only or overwrite.send_messages is False):
+        return False
+    overwrite.update(view_channel=True, read_message_history=True)
+    if read_only:
+        overwrite.update(send_messages=False)
+    await channel.set_permissions(everyone, overwrite=overwrite, reason="Visible to unverified members")
+    return True
+
+
 def owner_only():
     return app_commands.check(lambda interaction: interaction.user.id == OWNER_ID)
 
