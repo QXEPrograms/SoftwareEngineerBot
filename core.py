@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS scheduled (id INTEGER PRIMARY KEY AUTOINCREMENT, chan
                                       message TEXT, ping INTEGER, send_at TEXT);
 """)
 
-SETTINGS = ("welcome_channel", "ticket_category", "support_role", "log_channel", "autorole", "verify_role")
+SETTINGS = ("welcome_channel", "ticket_category", "support_role", "log_channel", "autorole", "verify_role",
+            "verify_channel")
 
 
 def _ensure_columns(table, columns):

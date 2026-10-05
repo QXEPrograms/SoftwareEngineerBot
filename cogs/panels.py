@@ -65,6 +65,8 @@ class VerifyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         guild, member = interaction.guild, interaction.user
+        if get_setting(guild.id, "verify_channel") != interaction.channel_id:
+            set_setting(guild.id, "verify_channel", interaction.channel_id)  # so welcome messages can link here
         role = guild.get_role(get_setting(guild.id, "verify_role") or 0)
         if not role:
             return await fail(interaction, "Verification isn't set up yet. Ask a staff member to run `/panel verify`.")
@@ -111,6 +113,7 @@ class Panels(commands.Cog):
         if problem := role_problem(interaction.guild, role):
             return await fail(interaction, problem)
         set_setting(interaction.guild_id, "verify_role", role.id)
+        set_setting(interaction.guild_id, "verify_channel", interaction.channel_id)
         await verify_panel(interaction.guild.name).send(interaction.channel)
         await reply(interaction, description=f"Verify panel posted. Members will get {role.mention}.",
                     color=ACCENT, ephemeral=True)

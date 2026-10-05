@@ -117,13 +117,22 @@ class General(commands.Cog):
 
         channel = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
         if channel:
+            next_steps = []
+            if guild.get_role(get_setting(guild.id, "verify_role") or 0):
+                verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
+                where = verify_channel.mention if verify_channel else "the verify channel"
+                next_steps.append(f"### ✅ Verify first\nHead to {where} and click **Verify** "
+                                  "to unlock the rest of the server.")
+                next_steps.append("-# Then read the rules, and open a ticket if you ever need help.")
+            else:
+                next_steps.append("-# Make sure to read the rules, and open a ticket if you ever need help.")
             await Card(
                 discord.ui.Section(f"## Welcome to {guild.name}!\n"
                                    f"Hey {member.mention}, glad you're here! 🌺\n"
                                    f"You're our **#{guild.member_count:,}** member.",
                                    accessory=discord.ui.Thumbnail(member.display_avatar.url)),
                 None,
-                "-# Make sure to read the rules, and open a ticket if you ever need help.",
+                *next_steps,
                 banner="welcome", pings=discord.AllowedMentions(users=True),
             ).send(channel)
 
