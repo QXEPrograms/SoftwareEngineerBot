@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, Card, fail, get_setting, log, make_public, reply, send_log, set_setting
+from core import ACCENT, Card, db, fail, get_setting, log, make_public, reply, send_log, set_setting
 from cogs.tickets import ticket_panel
 
 RULES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules.json")
@@ -141,7 +141,10 @@ class Panels(commands.Cog):
     async def fix_verification_setup(self, guild: discord.Guild):
         """Make sure unverified members can see the verify and welcome channels."""
         if not guild.get_role(get_setting(guild.id, "verify_role") or 0):
-            log.info("Verification isn't set up in %s, skipping channel check", guild)
+            log.info("Verification isn't set up in %s, skipping channel check (saved: welcome=%s logs=%s "
+                     "verify_role=%s, wallets=%d)", guild, get_setting(guild.id, "welcome_channel"),
+                     get_setting(guild.id, "log_channel"), get_setting(guild.id, "verify_role"),
+                     db.execute("SELECT COUNT(*) FROM wallets").fetchone()[0])
             return
         changes = []
         verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
@@ -169,6 +172,9 @@ class Panels(commands.Cog):
         set_setting(interaction.guild_id, "verify_role", role.id)
         set_setting(interaction.guild_id, "verify_channel", interaction.channel_id)
         await make_public(interaction.channel, read_only=True)
+        welcome = interaction.guild.get_channel(get_setting(interaction.guild_id, "welcome_channel") or 0)
+        if welcome:
+            await make_public(welcome, read_only=False)  # unverified members need to see their welcome
         await verify_panel(interaction.guild.name).send(interaction.channel)
         await reply(interaction, description=f"Verify panel posted. Members will get {role.mention}.",
                     color=ACCENT, ephemeral=True)
