@@ -30,7 +30,7 @@ class General(commands.Cog):
             "**📈 Server Stocks**\n`/stock info` `/stock buy` `/stock sell` `/stock portfolio`",
             "**🛡️ Moderation**\n`/kick` `/ban` `/timeout` `/purge`",
             None,
-            "**⚙️ Setup** (staff)\n`/panel rules` `/panel verify` `/panel tickets` `/stock setup`\n"
+            "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel verify` `/stock setup`\n"
             "`/config view` `/config welcome` `/config logs` `/config autorole`",
             banner="commands",
         ).respond(interaction, ephemeral=True)
@@ -72,22 +72,34 @@ class General(commands.Cog):
             None,
             f"**👋 Welcome channel:** {show('welcome_channel', 'channel')}\n"
             f"**📋 Staff log channel:** {show('log_channel', 'channel')}\n"
-            f"**🏷️ Auto role:** {show('autorole', 'role')}\n"
-            f"**✅ Verify role:** {show('verify_role', 'role')}",
+            f"**✅ Verify channel:** {show('verify_channel', 'channel')}\n"
+            f"**🏷️ Auto role:** {show('autorole', 'role')}",
             None,
             f"**🎫 Ticket category:** {show('ticket_category', 'channel')}\n"
             f"**🛟 Ticket support role:** {show('support_role', 'role')}",
-            "-# Change these with `/config welcome`, `/config logs`, `/config autorole`, `/panel verify` "
-            "and `/panel tickets`",
+            "-# Change these with `/config welcome`, `/config logs`, `/config autorole` and `/panel tickets`",
             banner="settings",
         ).respond(interaction, ephemeral=True)
 
     @config.command(name="welcome", description="Set the welcome channel (leave empty to turn off)")
-    async def config_welcome(self, interaction: discord.Interaction, channel: discord.TextChannel | None = None):
-        set_setting(interaction.guild_id, "welcome_channel", channel and channel.id)
-        if channel and get_setting(interaction.guild_id, "verify_role"):
-            await make_public(channel, read_only=False)  # unverified members need to see their welcome
-        text = f"Welcome messages will be sent to {channel.mention}." if channel else "Welcome messages turned off."
+    @app_commands.describe(channel="Where welcome messages are posted",
+                           verify_channel="Where new members verify. The welcome message tells them to go there first")
+    async def config_welcome(self, interaction: discord.Interaction, channel: discord.TextChannel | None = None,
+                             verify_channel: discord.TextChannel | None = None):
+        gid = interaction.guild_id
+        set_setting(gid, "welcome_channel", channel and channel.id)
+        if verify_channel:
+            set_setting(gid, "verify_channel", verify_channel.id)
+        if not channel:
+            return await reply(interaction, description="Welcome messages turned off.", color=ACCENT, ephemeral=True)
+
+        text = f"Welcome messages will be sent to {channel.mention}."
+        verify = interaction.guild.get_channel(get_setting(gid, "verify_channel") or 0)
+        if verify:
+            # Unverified members need to see both channels
+            await make_public(channel, read_only=False)
+            await make_public(verify, read_only=False)
+            text += f"\nThey'll tell new members to verify in {verify.mention} first."
         await reply(interaction, description=text, color=ACCENT, ephemeral=True)
 
     @config.command(name="logs", description="Set the staff log channel for mod actions and ticket transcripts")
@@ -119,15 +131,11 @@ class General(commands.Cog):
 
         channel = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
         if channel:
-            next_steps = []
-            if guild.get_role(get_setting(guild.id, "verify_role") or 0):
-                verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
-                where = verify_channel.mention if verify_channel else "the verify channel"
-                next_steps.append(f"### ✅ Verify first\nHead to {where} and click **Verify** "
-                                  "to unlock the rest of the server.")
-                next_steps.append("-# Then read the rules, and open a ticket if you ever need help.")
-            else:
-                next_steps.append("-# Make sure to read the rules, and open a ticket if you ever need help.")
+            verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
+            how = (f"Head to {verify_channel.mention} to verify and unlock the rest of the server." if verify_channel
+                   else "Verify to unlock the rest of the server.")
+            next_steps = [f"### ✅ Verify first\n{how}",
+                          "-# Then read the rules, and open a ticket if you ever need help."]
             await Card(
                 discord.ui.Section(f"## Welcome to {guild.name}!\n"
                                    f"Hey {member.mention}, glad you're here! 🌺\n"

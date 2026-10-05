@@ -19,8 +19,8 @@ Runs 24/7 on Railway. Every push to the `main` branch on GitHub redeploys it aut
 
 ## First-time server setup
 1. `/config logs #staff-logs` (mod actions, ticket transcripts and dividend payouts go here)
-2. `/config welcome #welcome`
-3. `/panel verify role:@Member` in your verify channel. Hide the other channels from `@everyone` so only verified members see them.
+2. `/config welcome channel:#welcome verify_channel:#verify`. Welcome messages tell new members to verify there first, and both channels are made visible to unverified members.
+3. Optional: `/panel verify role:@Member` in your verify channel if you want this bot's own Verify button to hand out a role.
 4. `/panel rules` in your rules channel
 5. `/panel tickets category:Tickets support_role:@Staff` in your support channel
 6. `/stock setup total_shares:1000 price:50 dividend:1`

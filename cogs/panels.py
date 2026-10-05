@@ -140,21 +140,23 @@ class Panels(commands.Cog):
 
     async def fix_verification_setup(self, guild: discord.Guild):
         """Make sure unverified members can see the verify and welcome channels."""
-        if not guild.get_role(get_setting(guild.id, "verify_role") or 0):
-            log.info("Verification isn't set up in %s, skipping channel check (saved: welcome=%s logs=%s "
-                     "verify_role=%s, wallets=%d)", guild, get_setting(guild.id, "welcome_channel"),
-                     get_setting(guild.id, "log_channel"), get_setting(guild.id, "verify_role"),
+        uses_button = bool(guild.get_role(get_setting(guild.id, "verify_role") or 0))
+        verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
+        if not uses_button and not verify_channel:
+            log.info("No verification set up in %s, skipping channel check (saved: welcome=%s logs=%s, wallets=%d)",
+                     guild, get_setting(guild.id, "welcome_channel"), get_setting(guild.id, "log_channel"),
                      db.execute("SELECT COUNT(*) FROM wallets").fetchone()[0])
             return
         changes = []
-        verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
         if not verify_channel:
             verify_channel = await find_verify_panel(guild)
             if verify_channel:
                 set_setting(guild.id, "verify_channel", verify_channel.id)
                 changes.append(f"Found the verify panel in {verify_channel.mention}. Welcome messages now link to it.")
-        if verify_channel and await make_public(verify_channel, read_only=True):
-            changes.append(f"{verify_channel.mention} is now visible to everyone, read-only.")
+        # Only lock chat in the verify channel when it holds this bot's Verify button
+        if verify_channel and await make_public(verify_channel, read_only=uses_button):
+            changes.append(f"{verify_channel.mention} is now visible to everyone"
+                           f"{', read-only' if uses_button else ''}.")
         welcome = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
         if welcome and await make_public(welcome, read_only=False):
             changes.append(f"{welcome.mention} is now visible to unverified members.")
