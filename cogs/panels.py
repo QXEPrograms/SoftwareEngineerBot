@@ -141,6 +141,7 @@ class Panels(commands.Cog):
     async def fix_verification_setup(self, guild: discord.Guild):
         """Make sure unverified members can see the verify and welcome channels."""
         if not guild.get_role(get_setting(guild.id, "verify_role") or 0):
+            log.info("Verification isn't set up in %s, skipping channel check", guild)
             return
         changes = []
         verify_channel = guild.get_channel(get_setting(guild.id, "verify_channel") or 0)
@@ -154,8 +155,9 @@ class Panels(commands.Cog):
         welcome = guild.get_channel(get_setting(guild.id, "welcome_channel") or 0)
         if welcome and await make_public(welcome, read_only=False):
             changes.append(f"{welcome.mention} is now visible to unverified members.")
+        log.info("Verification check in %s: verify channel=%s, welcome channel=%s, changes=%s",
+                 guild, verify_channel, welcome, changes or "none needed")
         if changes:
-            log.info("Updated verification setup in %s: %s", guild, changes)
             await send_log(guild, Card("### 🔧 Verification Setup Updated\n" + "\n".join(f"• {c}" for c in changes),
                                        footer=False, color=ACCENT))
 
