@@ -37,6 +37,7 @@ class General(commands.Cog):
             "**⚙️ Setup** (staff)\n`/panel rules` `/panel tickets` `/panel stocks` `/panel boosters` `/panel verify`\n"
             "`/stock add` `/stock edit` `/stock remove`\n"
             "`/config view` `/config welcome` `/config logs` `/config autorole`",
+            "-# ⚡ Made by Brandon",
             banner="commands",
         ).respond(interaction, ephemeral=True)
 
