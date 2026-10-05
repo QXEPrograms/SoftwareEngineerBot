@@ -15,6 +15,8 @@ TOKEN = (os.getenv("DISCORD_TOKEN") or "").strip()
 if not TOKEN:
     raise SystemExit("DISCORD_TOKEN is missing. Add it to .env (or to Railway's Variables tab).")
 OWNER_ID = int((os.getenv("OWNER_ID") or "0").strip() or 0)
+# Roles that can use every command, including owner-only ones. Comma-separated role IDs.
+MANAGER_ROLES = {int(r) for r in (os.getenv("MANAGER_ROLES") or "1245782007078981703").split(",") if r.strip()}
 
 BRAND_NAME = "Hawaii Studio"
 BRAND = discord.Color(0x007FFD)   # main logo blue
@@ -169,8 +171,25 @@ async def make_public(channel: discord.TextChannel, *, read_only: bool) -> bool:
     return True
 
 
+def is_manager(user) -> bool:
+    """The bot owner and anyone with a manager role can use every command."""
+    return user.id == OWNER_ID or any(role.id in MANAGER_ROLES for role in getattr(user, "roles", []))
+
+
+def staff_only(**perms):
+    """Allow members with these Discord permissions, or anyone with a manager role."""
+    def predicate(interaction: discord.Interaction):
+        if is_manager(interaction.user):
+            return True
+        missing = [name for name, value in perms.items() if getattr(interaction.permissions, name) != value]
+        if missing:
+            raise app_commands.MissingPermissions(missing)
+        return True
+    return app_commands.check(predicate)
+
+
 def owner_only():
-    return app_commands.check(lambda interaction: interaction.user.id == OWNER_ID)
+    return app_commands.check(lambda interaction: is_manager(interaction.user))
 
 
 def parse_duration(text: str) -> timedelta | None:

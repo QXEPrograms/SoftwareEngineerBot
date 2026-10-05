@@ -6,15 +6,14 @@ from discord.ext import commands
 
 from cogs.economy import BOOSTER_COINS, BOOSTER_DIVIDEND
 from core import (ACCENT, BOOST_PINK, BRAND_NAME, Card, fail, get_setting, is_booster, log, make_public, reply,
-                  set_setting)
+                  set_setting, staff_only)
 
 EIGHTBALL = ["Yes.", "No.", "Maybe.", "Definitely!", "Ask again later.", "Very doubtful.", "Without a doubt.",
              "Signs point to yes.", "Don't count on it."]
 
 
 class General(commands.Cog):
-    config = app_commands.Group(name="config", description="Server settings for the bot", guild_only=True,
-                                default_permissions=discord.Permissions(manage_guild=True))
+    config = app_commands.Group(name="config", description="Server settings for the bot", guild_only=True)
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -61,6 +60,7 @@ class General(commands.Cog):
 
     # ---------- Config ----------
     @config.command(name="view", description="See this server's bot settings")
+    @staff_only(manage_guild=True)
     async def config_view(self, interaction: discord.Interaction):
         gid = interaction.guild_id
 
@@ -85,6 +85,7 @@ class General(commands.Cog):
         ).respond(interaction, ephemeral=True)
 
     @config.command(name="welcome", description="Set the welcome channel (leave empty to turn off)")
+    @staff_only(manage_guild=True)
     @app_commands.describe(channel="Where welcome messages are posted",
                            verify_channel="Where new members verify. The welcome message tells them to go there first")
     async def config_welcome(self, interaction: discord.Interaction, channel: discord.TextChannel | None = None,
@@ -106,12 +107,14 @@ class General(commands.Cog):
         await reply(interaction, description=text, color=ACCENT, ephemeral=True)
 
     @config.command(name="logs", description="Set the staff log channel for mod actions and ticket transcripts")
+    @staff_only(manage_guild=True)
     async def config_logs(self, interaction: discord.Interaction, channel: discord.TextChannel | None = None):
         set_setting(interaction.guild_id, "log_channel", channel and channel.id)
         text = f"Staff logs will be sent to {channel.mention}." if channel else "Staff logs turned off."
         await reply(interaction, description=text, color=ACCENT, ephemeral=True)
 
     @config.command(name="autorole", description="Give new members a role automatically (leave empty to turn off)")
+    @staff_only(manage_guild=True)
     async def config_autorole(self, interaction: discord.Interaction, role: discord.Role | None = None):
         if role and (role.managed or role.is_default()):
             return await fail(interaction, "That role can't be given out.")

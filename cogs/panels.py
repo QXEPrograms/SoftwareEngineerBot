@@ -5,7 +5,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, BOOST_PINK, Card, db, fail, get_setting, log, make_public, reply, send_log, set_setting
+from core import (ACCENT, BOOST_PINK, Card, db, fail, get_setting, log, make_public, reply, send_log, set_setting,
+                  staff_only)
 from cogs.economy import BOOSTER_COINS, BOOSTER_DIVIDEND
 from cogs.tickets import ticket_panel
 
@@ -141,8 +142,7 @@ async def find_verify_panel(guild: discord.Guild) -> discord.TextChannel | None:
 
 
 class Panels(commands.Cog):
-    panel = app_commands.Group(name="panel", description="Post a branded panel in this channel", guild_only=True,
-                               default_permissions=discord.Permissions(manage_guild=True))
+    panel = app_commands.Group(name="panel", description="Post a branded panel in this channel", guild_only=True)
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -190,6 +190,7 @@ class Panels(commands.Cog):
                                        footer=False, color=ACCENT))
 
     @panel.command(name="verify", description="Post a verify button that gives new members a role")
+    @staff_only(manage_guild=True)
     @app_commands.describe(role="The role members get when they verify, e.g. @Member")
     async def panel_verify(self, interaction: discord.Interaction, role: discord.Role):
         if problem := role_problem(interaction.guild, role):
@@ -205,6 +206,7 @@ class Panels(commands.Cog):
                     color=ACCENT, ephemeral=True)
 
     @panel.command(name="boosters", description="Post the booster perks panel")
+    @staff_only(manage_guild=True)
     async def panel_boosters(self, interaction: discord.Interaction):
         guild = interaction.guild
         await boosters_panel(guild).send(interaction.channel)
@@ -221,11 +223,13 @@ class Panels(commands.Cog):
         await reply(interaction, description=text, color=ACCENT, ephemeral=True)
 
     @panel.command(name="rules", description="Post the rules panel with a category dropdown")
+    @staff_only(manage_guild=True)
     async def panel_rules(self, interaction: discord.Interaction):
         await rules_panel().send(interaction.channel)
         await reply(interaction, description="Rules panel posted.", color=ACCENT, ephemeral=True)
 
     @panel.command(name="tickets", description="Post the support ticket panel")
+    @staff_only(manage_guild=True)
     @app_commands.describe(category="Where new tickets go", support_role="Role that can see and answer tickets")
     async def panel_tickets(self, interaction: discord.Interaction, category: discord.CategoryChannel | None = None,
                             support_role: discord.Role | None = None):

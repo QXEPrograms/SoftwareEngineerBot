@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from core import ACCENT, Card, add_coins, db, fail, get_coins, is_booster, log, reply, send_log
+from core import ACCENT, Card, add_coins, db, fail, get_coins, is_booster, log, reply, send_log, staff_only
 
 DAILY_COINS = 100
 CHAT_COINS = 5        # coins per message...
@@ -134,7 +134,7 @@ class Economy(commands.Cog):
     @stock.command(description="(Admin) Offer shares of this server")
     @app_commands.describe(total_shares="How many shares exist", price="Starting price per share (doubles when sold out)",
                            dividend="Coins paid per share to owners every day (0 = none)")
-    @app_commands.checks.has_permissions(administrator=True)  # default_permissions doesn't apply to subcommands
+    @staff_only(administrator=True)
     async def setup(self, interaction: discord.Interaction, total_shares: app_commands.Range[int, 1, 1_000_000],
                     price: app_commands.Range[int, 1, 1_000_000], dividend: app_commands.Range[int, 0, 1_000_000] = 0):
         if total_shares < shares_sold(interaction.guild_id):

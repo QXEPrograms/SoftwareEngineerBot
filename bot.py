@@ -32,7 +32,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
     elif isinstance(error, app_commands.NoPrivateMessage):
         message = "This command only works in a server."
     elif isinstance(error, app_commands.CheckFailure):
-        message = "Only the bot owner can use this command."
+        message = "Only the bot owner and managers can use this command."
     elif isinstance(original, discord.Forbidden):
         message = "I don't have permission to do that. Make sure my role is high enough in Server Settings → Roles."
     else:

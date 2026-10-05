@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from core import ACCENT, ERROR, Card, fail, reply, send_log
+from core import ACCENT, ERROR, Card, fail, reply, send_log, staff_only
 
 
 def moderation_problem(interaction: discord.Interaction, member: discord.Member):
@@ -52,7 +52,7 @@ class Moderation(commands.Cog):
         self.bot = bot
 
     @app_commands.command(description="Kick a member")
-    @app_commands.default_permissions(kick_members=True)
+    @staff_only(kick_members=True)
     @app_commands.guild_only()
     async def kick(self, interaction: discord.Interaction, member: discord.Member, reason: str = "No reason given"):
         if problem := moderation_problem(interaction, member):
@@ -63,7 +63,7 @@ class Moderation(commands.Cog):
         await log_action(interaction, "👢 Member Kicked", member, reason)
 
     @app_commands.command(description="Ban a member")
-    @app_commands.default_permissions(ban_members=True)
+    @staff_only(ban_members=True)
     @app_commands.guild_only()
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str = "No reason given"):
         if problem := moderation_problem(interaction, member):
@@ -75,7 +75,7 @@ class Moderation(commands.Cog):
 
     @app_commands.command(description="Timeout a member")
     @app_commands.describe(minutes="Up to 40320 (28 days)")
-    @app_commands.default_permissions(moderate_members=True)
+    @staff_only(moderate_members=True)
     @app_commands.guild_only()
     async def timeout(self, interaction: discord.Interaction, member: discord.Member,
                       minutes: app_commands.Range[int, 1, 40320], reason: str = "No reason given"):
@@ -86,7 +86,7 @@ class Moderation(commands.Cog):
         await log_action(interaction, "⏳ Member Timed Out", member, reason, f"\n**Duration:** {minutes} min")
 
     @app_commands.command(description="Delete recent messages in this channel")
-    @app_commands.default_permissions(manage_messages=True)
+    @staff_only(manage_messages=True)
     @app_commands.guild_only()
     async def purge(self, interaction: discord.Interaction, amount: app_commands.Range[int, 1, 100]):
         await interaction.response.defer(ephemeral=True)
